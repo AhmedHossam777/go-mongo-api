@@ -8,6 +8,7 @@ import (
 
 	"github.com/AhmedHossam777/go-mongo/config"
 	"github.com/AhmedHossam777/go-mongo/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -75,5 +76,40 @@ func CreateCourse(w http.ResponseWriter, r *http.Request) {
 		"message":  "course created successfully",
 		"insertID": result.InsertedID,
 		"course":   course,
+	})
+}
+
+// GET all courses
+
+func GetAllCourses(w http.ResponseWriter, r *http.Request) {
+	// step 1 : make the context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := getCourseCollection()
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"error while getting all courses "+err.Error())
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var courses []models.Course
+	err = cursor.All(ctx, &courses)
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"Error decoding courses: "+err.Error())
+		return
+	}
+
+	// Step 3: Handle empty result
+	if courses == nil {
+		courses = []models.Course{} // Return empty array, not null
+	}
+
+	sendJson(w, http.StatusOK, map[string]interface{}{
+		"message": "fetching all courses successfully",
+		"courses": courses,
 	})
 }
