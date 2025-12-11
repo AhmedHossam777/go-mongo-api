@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/AhmedHossam777/go-mongo/config"
+	"github.com/AhmedHossam777/go-mongo/controllers"
 	"github.com/joho/godotenv"
 )
 
@@ -27,6 +28,7 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", serverHome)
+	router.HandleFunc("POST /courses", controllers.CreateCourse)
 	// Start server
 	fmt.Printf("🚀 Server starting on port %s\n", port)
 	fmt.Printf("📚 API available at http://localhost:%s/courses\n", port)
