@@ -36,7 +36,7 @@ func sendErr(
 	sendJson(w, status, map[string]string{"message": message})
 }
 
-//* Create a Course
+// * Create a Course
 
 func CreateCourse(w http.ResponseWriter, r *http.Request) {
 	// step 1: create a context
@@ -79,7 +79,7 @@ func CreateCourse(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GET all courses
+// GetAllCourses
 
 func GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	// step 1 : make the context
@@ -111,5 +111,45 @@ func GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	sendJson(w, http.StatusOK, map[string]interface{}{
 		"message": "fetching all courses successfully",
 		"courses": courses,
+	})
+}
+
+func GetOneCourse(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// get the url from the param path
+	courseId := r.PathValue("id")
+
+	// parse it to mongo objectID
+	objectID, err := primitive.ObjectIDFromHex(courseId)
+
+	if err != nil {
+		sendErr(w, http.StatusBadRequest,
+			"Invalid course id please add a valid mongo id")
+		return
+	}
+
+	// find the document
+	collection := getCourseCollection()
+	var course models.Course
+
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&course)
+
+	// handle not found
+	if err == mongo.ErrNoDocuments {
+		sendErr(w, http.StatusNotFound, "Course not found")
+		return
+	}
+
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"Error fetching course: "+err.Error())
+		return
+	}
+
+	sendJson(w, http.StatusOK, map[string]interface{}{
+		"message": "course found successfully",
+		"course":  course,
 	})
 }

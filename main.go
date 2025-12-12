@@ -30,6 +30,8 @@ func main() {
 	router.HandleFunc("GET /", serverHome)
 	router.HandleFunc("POST /courses", controllers.CreateCourse)
 	router.HandleFunc("GET /courses", controllers.GetAllCourses)
+	router.HandleFunc("GET /courses/{id}", controllers.GetOneCourse)
+
 	// Start server
 	fmt.Printf("🚀 Server starting on port %s\n", port)
 	fmt.Printf("📚 API available at http://localhost:%s/courses\n", port)
