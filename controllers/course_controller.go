@@ -153,3 +153,37 @@ func GetOneCourse(w http.ResponseWriter, r *http.Request) {
 		"course":  course,
 	})
 }
+
+func DeleteOneCourse(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	courseId := r.PathValue("id")
+
+	objectID, err := primitive.ObjectIDFromHex(courseId)
+
+	if err != nil {
+		sendErr(w, http.StatusBadRequest,
+			"Invalid course id please add a valid mongo id")
+		return
+	}
+
+	collection := getCourseCollection()
+
+	result, err := collection.DeleteOne(ctx, bson.M{"_id": objectID})
+
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"Error deleting course: "+err.Error())
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		sendErr(w, http.StatusNotFound, "course not found")
+		return
+	}
+
+	sendJson(w, http.StatusOK, map[string]string{
+		"message": "course deleted successfully",
+	})
+}
