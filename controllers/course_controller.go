@@ -154,6 +154,77 @@ func GetOneCourse(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func UpdateCourse(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	courseId := r.PathValue("id")
+
+	objectID, err := primitive.ObjectIDFromHex(courseId)
+	if err != nil {
+		sendErr(w, http.StatusBadRequest, "invalid mongo id")
+		return
+	}
+
+	var updatedData models.Course
+	err = json.NewDecoder(r.Body).Decode(&updatedData)
+	if err != nil {
+		sendErr(w, http.StatusBadRequest, "invalid request body "+err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	// build update document
+	update := bson.M{
+		"$set": bson.M{},
+	}
+
+	setFields := update["$set"].(bson.M)
+	if updatedData.CourseName != "" {
+		setFields["course_name"] = updatedData.CourseName
+	}
+	if updatedData.Price != 0 {
+		setFields["course_price"] = updatedData.Price
+	}
+	if updatedData.Author != nil {
+		setFields["author"] = updatedData.Author
+	}
+
+	if len(setFields) == 0 {
+		sendErr(w, http.StatusBadRequest, "no data to update")
+		return
+	}
+
+	collection := getCourseCollection()
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"Error updating course: "+err.Error())
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		sendErr(w, http.StatusNotFound, "course not found")
+		return
+	}
+
+	// last operation is to get the update course and return it
+	var updatedCourse models.Course
+	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&updatedCourse)
+
+	if err != nil {
+		sendErr(w, http.StatusInternalServerError,
+			"Error fetching updated course: "+err.Error())
+		return
+	}
+
+	sendJson(w, http.StatusOK, map[string]interface{}{
+		"message": "course update successfully",
+		"course":  updatedCourse,
+	})
+}
+
 func DeleteOneCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

@@ -31,7 +31,7 @@ func main() {
 	router.HandleFunc("POST /courses", controllers.CreateCourse)
 	router.HandleFunc("GET /courses", controllers.GetAllCourses)
 	router.HandleFunc("GET /courses/{id}", controllers.GetOneCourse)
-
+	router.HandleFunc("PATCH /courses/{id}", controllers.UpdateCourse)
 	router.HandleFunc("DELETE /courses/{id}", controllers.DeleteOneCourse)
 
 	// Start server
