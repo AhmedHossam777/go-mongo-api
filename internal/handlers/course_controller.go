@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AhmedHossam777/go-mongo/config"
-	"github.com/AhmedHossam777/go-mongo/models"
+	"github.com/AhmedHossam777/go-mongo/internal/config"
+	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

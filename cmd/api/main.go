@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/AhmedHossam777/go-mongo/config"
-	"github.com/AhmedHossam777/go-mongo/controllers"
+	"github.com/AhmedHossam777/go-mongo/internal/config"
+	"github.com/AhmedHossam777/go-mongo/internal/handlers"
 	"github.com/joho/godotenv"
 )
 
@@ -28,11 +28,11 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", serverHome)
-	router.HandleFunc("POST /courses", controllers.CreateCourse)
-	router.HandleFunc("GET /courses", controllers.GetAllCourses)
-	router.HandleFunc("GET /courses/{id}", controllers.GetOneCourse)
-	router.HandleFunc("PATCH /courses/{id}", controllers.UpdateCourse)
-	router.HandleFunc("DELETE /courses/{id}", controllers.DeleteOneCourse)
+	router.HandleFunc("POST /courses", handlers.CreateCourse)
+	router.HandleFunc("GET /courses", handlers.GetAllCourses)
+	router.HandleFunc("GET /courses/{id}", handlers.GetOneCourse)
+	router.HandleFunc("PATCH /courses/{id}", handlers.UpdateCourse)
+	router.HandleFunc("DELETE /courses/{id}", handlers.DeleteOneCourse)
 
 	// Start server
 	fmt.Printf("🚀 Server starting on port %s\n", port)
