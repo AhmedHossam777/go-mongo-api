@@ -16,7 +16,9 @@ type CourseRepository interface {
 	FindOne(ctx context.Context, courseId primitive.ObjectID) (
 		*models.Course, error,
 	)
-	UpdateOne(ctx context.Context, courseId primitive.ObjectID) (
+	UpdateOne(
+		ctx context.Context, courseId primitive.ObjectID, course *models.Course,
+	) (
 		*models.Course, error,
 	)
 	DeleteOne(ctx context.Context, courseId primitive.ObjectID) error
@@ -93,7 +95,7 @@ func (r *courseRepository) FindOne(
 }
 
 func (r courseRepository) UpdateOne(
-	ctx context.Context, id primitive.ObjectID,
+	ctx context.Context, id primitive.ObjectID, course *models.Course,
 ) (*models.Course, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
@@ -101,8 +103,6 @@ func (r courseRepository) UpdateOne(
 
 	update := bson.M{"$set": bson.M{}}
 	setFields := update["$set"].(bson.M)
-
-	var course *models.Course
 
 	if course.CourseName != "" {
 		setFields["course_name"] = course.CourseName
