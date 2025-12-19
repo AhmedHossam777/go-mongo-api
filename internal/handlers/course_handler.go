@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -52,8 +53,9 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err, courses := h.service.GetAllCourses(ctx)
+	courses, err := h.service.GetAllCourses(ctx)
 	if err != nil {
+		log.Println(err)
 		SendError(w, http.StatusInternalServerError, "Error fetching courses")
 		return
 	}

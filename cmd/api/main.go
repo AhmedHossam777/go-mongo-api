@@ -5,22 +5,26 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/AhmedHossam777/go-mongo/internal/config"
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
-	"github.com/joho/godotenv"
+	"github.com/AhmedHossam777/go-mongo/internal/repository"
+	"github.com/AhmedHossam777/go-mongo/internal/services"
 )
 
 func main() {
-	err := godotenv.Load()
+	cnfg := config.LoadConfig()
+
+	db, err := config.ConnectDB(cnfg)
 	if err != nil {
-		log.Println("Warning: .env file not found!!")
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	config.ConnectDB()
+	courseRepo := repository.NewCourseRepo(db)
+	courseService := services.NewCourseService(courseRepo)
+	courseHandler := handlers.NewCourseHandler(courseService)
 
-	port := os.Getenv("PORT")
+	port := cnfg.Port
 	if port == "" {
 		port = "3000"
 	}
@@ -28,11 +32,11 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", serverHome)
-	router.HandleFunc("POST /courses", handlers.CreateCourse)
-	router.HandleFunc("GET /courses", handlers.GetAllCourses)
-	router.HandleFunc("GET /courses/{id}", handlers.GetOneCourse)
-	router.HandleFunc("PATCH /courses/{id}", handlers.UpdateCourse)
-	router.HandleFunc("DELETE /courses/{id}", handlers.DeleteOneCourse)
+	router.HandleFunc("POST /courses", courseHandler.CreateCourse)
+	router.HandleFunc("GET /courses", courseHandler.GetAllCourses)
+	router.HandleFunc("GET /courses/{id}", courseHandler.GetOneCourse)
+	router.HandleFunc("PATCH /courses/{id}", courseHandler.UpdateCourse)
+	router.HandleFunc("DELETE /courses/{id}", courseHandler.DeleteOneCourse)
 
 	// Start server
 	fmt.Printf("🚀 Server starting on port %s\n", port)
