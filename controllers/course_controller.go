@@ -13,8 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-//! some helper functions
-
 func getCourseCollection() *mongo.Collection {
 	return config.DB.Collection("courses")
 }
@@ -39,11 +37,9 @@ func sendErr(
 // * Create a Course
 
 func CreateCourse(w http.ResponseWriter, r *http.Request) {
-	// step 1: create a context
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// step 2 : Decode request body, don't forget to close the body
 	var course models.Course
 	err := json.NewDecoder(r.Body).Decode(&course)
 	if err != nil {
@@ -52,16 +48,13 @@ func CreateCourse(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// step 3 : validate the course
 	if course.CourseName == "" {
 		sendErr(w, http.StatusBadRequest, "course_name is required")
 		return
 	}
 
-	// step 4 : generate new ObjectID
 	course.ID = primitive.NewObjectID()
 
-	// step 5 : insert into mongo DB
 	collection := getCourseCollection()
 	result, err := collection.InsertOne(ctx,
 		course) // this result contains the insertID
@@ -71,7 +64,6 @@ func CreateCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// step 6 : send response
 	sendJson(w, http.StatusCreated, map[string]interface{}{
 		"message":  "course created successfully",
 		"insertID": result.InsertedID,
@@ -79,10 +71,7 @@ func CreateCourse(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetAllCourses
-
 func GetAllCourses(w http.ResponseWriter, r *http.Request) {
-	// step 1 : make the context
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -103,9 +92,8 @@ func GetAllCourses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Step 3: Handle empty result
 	if courses == nil {
-		courses = []models.Course{} // Return empty array, not null
+		courses = []models.Course{}
 	}
 
 	sendJson(w, http.StatusOK, map[string]interface{}{
@@ -118,10 +106,8 @@ func GetOneCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// get the url from the param path
 	courseId := r.PathValue("id")
 
-	// parse it to mongo objectID
 	objectID, err := primitive.ObjectIDFromHex(courseId)
 
 	if err != nil {
@@ -130,13 +116,11 @@ func GetOneCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// find the document
 	collection := getCourseCollection()
 	var course models.Course
 
 	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&course)
 
-	// handle not found
 	if err == mongo.ErrNoDocuments {
 		sendErr(w, http.StatusNotFound, "Course not found")
 		return
@@ -174,7 +158,6 @@ func UpdateCourse(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// build update document
 	update := bson.M{
 		"$set": bson.M{},
 	}
@@ -209,7 +192,6 @@ func UpdateCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// last operation is to get the update course and return it
 	var updatedCourse models.Course
 	err = collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&updatedCourse)
 
