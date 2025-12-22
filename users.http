@@ -4,8 +4,8 @@ GET https://examples.http-client.intellij.net/get
 
 ###
 
-@baseUrl = http://localhost:3000
-@userId = 6949867975ae0e7f34ea1695
+@baseUrl = http://localhost:3000/api/v1
+@userId = 6949d4fb2832bbaaf2b41015
 
 
 ### Home endpoint - Check if server is running

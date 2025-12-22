@@ -10,6 +10,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
 	"github.com/AhmedHossam777/go-mongo/internal/repository"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
+	"github.com/AhmedHossam777/go-mongo/routes"
 )
 
 func main() {
@@ -33,25 +34,17 @@ func main() {
 		port = "3000"
 	}
 
-	router := http.NewServeMux()
+	router := routes.SetupRoutes(userHandler, courseHandler)
 
-	router.HandleFunc("GET /", serverHome)
-
-	router.HandleFunc("POST /courses", courseHandler.CreateCourse)
-	router.HandleFunc("GET /courses", courseHandler.GetAllCourses)
-	router.HandleFunc("GET /courses/{id}", courseHandler.GetOneCourse)
-	router.HandleFunc("PATCH /courses/{id}", courseHandler.UpdateCourse)
-	router.HandleFunc("DELETE /courses/{id}", courseHandler.DeleteOneCourse)
-
-	router.HandleFunc("POST /users", userHandler.CreateUser)
-	router.HandleFunc("GET /users", userHandler.GetAllUsers)
-	router.HandleFunc("GET /users/{id}", userHandler.GetOneUser)
-	router.HandleFunc("PATCH /users/{id}", userHandler.UpdateUser)
-	router.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
-
-	// Start server
+	fmt.Println("╔════════════════════════════════════════════════════╗")
+	fmt.Println("║       Go-MongoDB Course API Server                ║")
+	fmt.Println("╚════════════════════════════════════════════════════╝")
 	fmt.Printf("🚀 Server starting on port %s\n", port)
-	fmt.Printf("📚 API available at http://localhost:%s/courses\n", port)
+	fmt.Printf("📚 API v1 Base URL: http://localhost:%s/api/v1\n", port)
+	fmt.Printf("📖 Courses API: http://localhost:%s/api/v1/courses\n", port)
+	fmt.Printf("👥 Users API: http://localhost:%s/api/v1/users\n", port)
+	fmt.Printf("💚 Health Check: http://localhost:%s/health\n", port)
+	fmt.Println("════════════════════════════════════════════════════")
 
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
