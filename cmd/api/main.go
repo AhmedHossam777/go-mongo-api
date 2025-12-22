@@ -24,7 +24,9 @@ func main() {
 	courseService := services.NewCourseService(courseRepo)
 	courseHandler := handlers.NewCourseHandler(courseService)
 
-	//userRepo := repository.NewUserRepo(db)
+	userRepo := repository.NewUserRepo(db)
+	userService := services.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
 
 	port := cnfg.Port
 	if port == "" {
@@ -34,11 +36,18 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", serverHome)
+
 	router.HandleFunc("POST /courses", courseHandler.CreateCourse)
 	router.HandleFunc("GET /courses", courseHandler.GetAllCourses)
 	router.HandleFunc("GET /courses/{id}", courseHandler.GetOneCourse)
 	router.HandleFunc("PATCH /courses/{id}", courseHandler.UpdateCourse)
 	router.HandleFunc("DELETE /courses/{id}", courseHandler.DeleteOneCourse)
+
+	router.HandleFunc("POST /users", userHandler.CreateUser)
+	router.HandleFunc("GET /users", userHandler.GetAllUsers)
+	router.HandleFunc("GET /users/{id}", userHandler.GetOneUser)
+	router.HandleFunc("PATCH /users/{id}", userHandler.UpdateUser)
+	router.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
 
 	// Start server
 	fmt.Printf("🚀 Server starting on port %s\n", port)
