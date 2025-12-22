@@ -24,6 +24,8 @@ func main() {
 	courseService := services.NewCourseService(courseRepo)
 	courseHandler := handlers.NewCourseHandler(courseService)
 
+	//userRepo := repository.NewUserRepo(db)
+
 	port := cnfg.Port
 	if port == "" {
 		port = "3000"
