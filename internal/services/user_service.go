@@ -13,9 +13,9 @@ import (
 var (
 	ErrUserNotFound         = errors.New("user not found")
 	ErrInvalidUserID        = errors.New("invalid user ID")
-	ErrUsernameRequired     = errors.New("user name is required")
-	ErrPasswordRequired     = errors.New("user name is required")
-	ErrEmailRequired        = errors.New("user name is required")
+	ErrUsernameRequired     = errors.New("username is required")
+	ErrPasswordRequired     = errors.New("password is required")
+	ErrEmailRequired        = errors.New("email is required")
 	ErrNoFieldsToUpdateUser = errors.New("no fields to update")
 )
 
