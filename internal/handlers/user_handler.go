@@ -29,7 +29,7 @@ func (h *UserHandler) GetAllUsers(
 	if err != nil {
 		log.Println(err)
 		SendError(w, http.StatusInternalServerError,
-			"error while fetching all user")
+			"error while fetching all user"+err.Error())
 		return
 	}
 
@@ -47,14 +47,15 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		SendError(w, http.StatusInternalServerError,
-			"Error while decoding request body")
+			"Error while decoding request body"+err.Error())
 		return
 	}
 
 	createdUser, err := h.service.CreateUser(ctx, user)
 	if err != nil {
+	
 		SendError(w, http.StatusInternalServerError,
-			"Error while creating new user")
+			"Error while creating new user"+err.Error())
 		return
 	}
 
@@ -93,6 +94,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		SendError(w, http.StatusInternalServerError,
 			"error while updating one user")
+			return
 	}
 
 	SendSuccess(w, http.StatusOK, "User updated successfully", updatedUser)
