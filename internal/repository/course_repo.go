@@ -24,7 +24,6 @@ type CourseRepository interface {
 	DeleteOne(ctx context.Context, courseId primitive.ObjectID) error
 }
 
-// this is like the collection we did before
 type courseRepository struct {
 	collection *mongo.Collection
 	timeout    time.Duration
@@ -39,6 +38,7 @@ func NewCourseRepo(db *mongo.Database) CourseRepository {
 func (r *courseRepository) Create(
 	ctx context.Context, course *models.Course,
 ) (*models.Course, error) {
+
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
@@ -123,8 +123,10 @@ func (r courseRepository) UpdateOne(
 		return nil, mongo.ErrNoDocuments
 	}
 
-	return r.FindOne(ctx, id)
-
+	//* here we created a new context as the time of the original context my be ended
+	fetchCtx, fetchCancel := context.WithTimeout(context.Background(), r.timeout)
+	defer fetchCancel()
+	return r.FindOne(fetchCtx, id)
 }
 
 func (r *courseRepository) DeleteOne(
