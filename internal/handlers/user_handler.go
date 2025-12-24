@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
 )
@@ -39,7 +40,7 @@ func (h *UserHandler) GetAllUsers(
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	// Decode into SignUpInput, not User
 	var input models.SignUpInput
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -50,35 +51,41 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			"Error while decoding request body: "+err.Error())
 		return
 	}
-	
+
 	// Validate input
 	if input.Name == "" || input.Email == "" || input.Password == "" {
-		SendError(w, http.StatusBadRequest, "Name, email, and password are required")
+		SendError(w, http.StatusBadRequest,
+			"Name, email, and password are required")
 		return
 	}
-	
-	// TODO: Hash the password before storing!
-	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	
+
+	hashedPassword, err := helpers.HashPassword(input.Password)
+	if err != nil {
+		SendError(w, http.StatusInternalServerError,
+			"Error while hashing the password")
+		return
+	}
+
 	// Create User from input
 	user := &models.User{
 		Name:      input.Name,
 		Email:     input.Email,
-		Password:  input.Password, // Should be hashed!
-		Role:      "user", // Default role
+		Password:  hashedPassword,
+		Role:      "user",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	createdUser, err := h.service.CreateUser(ctx, user)
 	if err != nil {
 		SendError(w, http.StatusInternalServerError,
 			"Error while creating new user: "+err.Error())
 		return
 	}
-	
+
 	// Return response without password
-	SendSuccess(w, http.StatusCreated, "User created successfully", createdUser.ToResponse())
+	SendSuccess(w, http.StatusCreated, "User created successfully",
+		createdUser.ToResponse())
 }
 
 func (h *UserHandler) GetOneUser(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +120,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		SendError(w, http.StatusInternalServerError,
 			"error while updating one user")
-			return
+		return
 	}
 
 	SendSuccess(w, http.StatusOK, "User updated successfully", updatedUser)
