@@ -115,6 +115,13 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	validationErr := helpers.ValidateStruct(updatedCourseDto)
+
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
 	updatedCourse, err := h.service.UpdateCourse(ctx, courseId, &updatedCourseDto)
 
 	RespondWithJSON(w, http.StatusOK, updatedCourse)

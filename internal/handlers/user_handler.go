@@ -104,8 +104,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var userData *models.User
-	err := json.NewDecoder(r.Body).Decode(&userData)
+	var updateUserDto dto.UpdateUserDto
+	err := json.NewDecoder(r.Body).Decode(&updateUserDto)
 	if err != nil {
 		log.Println(err)
 		RespondWithError(w, http.StatusInternalServerError,
@@ -113,8 +113,14 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	validationErr := helpers.ValidateStruct(updateUserDto)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
 	userId := r.PathValue("id")
-	updatedUser, err := h.service.UpdateUser(ctx, userId, userData)
+	updatedUser, err := h.service.UpdateUser(ctx, userId, &updateUserDto)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError,
 			"error while updating one user")

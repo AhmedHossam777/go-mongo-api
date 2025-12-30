@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/repository"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -23,7 +25,7 @@ type UserService interface {
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	GetOneUser(ctx context.Context, id string) (*models.User, error)
-	UpdateUser(ctx context.Context, id string, user *models.User) (
+	UpdateUser(ctx context.Context, id string, user *dto.UpdateUserDto) (
 		*models.User, error,
 	)
 	DeleteUser(ctx context.Context, id string) error
@@ -70,7 +72,7 @@ func (s *userService) GetOneUser(
 }
 
 func (s *userService) UpdateUser(
-	ctx context.Context, id string, user *models.User,
+	ctx context.Context, id string, updateUserDto *dto.UpdateUserDto,
 ) (*models.User, error) {
 
 	objId, err := primitive.ObjectIDFromHex(id)
@@ -78,11 +80,18 @@ func (s *userService) UpdateUser(
 		return nil, ErrInvalidUserID
 	}
 
-	if user.Role == "" && user.Name == "" && user.Email == "" && user.Password == "" {
-		return nil, ErrNoFieldsToUpdateUser
+	var update = bson.M{}
+	if updateUserDto.Name != nil {
+		update["Name"] = updateUserDto.Name
+	}
+	if updateUserDto.Email != nil {
+		update["Email"] = updateUserDto.Email
+	}
+	if updateUserDto.Password != nil {
+		update["Password"] = updateUserDto.Password
 	}
 
-	updatedUser, err := s.repo.UpdateOneUser(ctx, objId, user)
+	updatedUser, err := s.repo.UpdateOneUser(ctx, objId, bson.M{"$set": update})
 
 	if err == mongo.ErrNoDocuments {
 		return nil, ErrUserNotFound

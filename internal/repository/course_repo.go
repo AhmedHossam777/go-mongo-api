@@ -96,7 +96,7 @@ func (r *courseRepository) FindOne(
 	return course, nil
 }
 
-func (r courseRepository) UpdateOne(
+func (r *courseRepository) UpdateOne(
 	ctx context.Context, id primitive.ObjectID, update bson.M,
 ) (*models.Course, error) {
 
