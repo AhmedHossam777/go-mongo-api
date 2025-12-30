@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ var (
 )
 
 type CourseService interface {
-	CreateCourse(ctx context.Context, course *models.Course) (
+	CreateCourse(ctx context.Context, courseDto *dto.CreateCourseDto) (
 		*models.Course, error,
 	)
 	GetAllCourses(ctx context.Context) ([]models.Course, error)
@@ -38,8 +39,12 @@ func NewCourseService(repo repository.CourseRepository) CourseService {
 }
 
 func (s *courseService) CreateCourse(
-	ctx context.Context, course *models.Course,
+	ctx context.Context, courseDto *dto.CreateCourseDto,
 ) (*models.Course, error) {
+	course := &models.Course{
+		CourseName: courseDto.CourseName,
+		Price:      courseDto.Price,
+	}
 	if course.CourseName == "" {
 		return nil, ErrCourseNameRequired
 	}
