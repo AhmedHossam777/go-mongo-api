@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -28,6 +29,7 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 
 	var courseDto dto.CreateCourseDto
 	err := json.NewDecoder(r.Body).Decode(&courseDto)
+	log.Println(courseDto)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest,
 			"Invalid request body, "+err.Error())

@@ -40,16 +40,6 @@ func NewUserService(repo repository.UserRepository) UserService {
 func (s *userService) CreateUser(
 	ctx context.Context, user *models.User,
 ) (*models.User, error) {
-	if user.Name == "" {
-		return nil, ErrUsernameRequired
-	}
-	if user.Email == "" {
-		return nil, ErrEmailRequired
-	}
-	if user.Password == "" {
-		return nil, ErrPasswordRequired
-	}
-
 	return s.repo.CreateUser(ctx, user)
 }
 

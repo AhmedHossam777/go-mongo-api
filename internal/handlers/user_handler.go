@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
@@ -41,9 +42,8 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Decode into SignUpInput, not User
-	var input models.SignUpInput
-	err := json.NewDecoder(r.Body).Decode(&input)
+	var createUserDto dto.CreateUserDto
+	err := json.NewDecoder(r.Body).Decode(&createUserDto)
 	defer r.Body.Close()
 	if err != nil {
 		log.Println(err)
@@ -52,24 +52,22 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate input
-	if input.Name == "" || input.Email == "" || input.Password == "" {
-		RespondWithError(w, http.StatusBadRequest,
-			"Name, email, and password are required")
-		return
-	}
-
-	hashedPassword, err := helpers.HashPassword(input.Password)
+	hashedPassword, err := helpers.HashPassword(createUserDto.Password)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError,
 			"Error while hashing the password")
 		return
 	}
 
-	// Create User from input
+	validationErr := helpers.ValidateStruct(createUserDto)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
 	user := &models.User{
-		Name:      input.Name,
-		Email:     input.Email,
+		Name:      createUserDto.Name,
+		Email:     createUserDto.Email,
 		Password:  hashedPassword,
 		Role:      "user",
 		CreatedAt: time.Now(),
@@ -83,7 +81,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return response without password
 	RespondWithJSON(w, http.StatusCreated,
 		createdUser.ToResponse())
 }
