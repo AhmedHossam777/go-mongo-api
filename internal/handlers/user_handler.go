@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
@@ -29,47 +30,44 @@ func (h *UserHandler) GetAllUsers(
 	users, err := h.service.GetAllUsers(ctx)
 	if err != nil {
 		log.Println(err)
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"error while fetching all user"+err.Error())
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "User fetched successfully", users)
+	RespondWithJSON(w, http.StatusOK, users)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Decode into SignUpInput, not User
-	var input models.SignUpInput
-	err := json.NewDecoder(r.Body).Decode(&input)
+	var createUserDto dto.CreateUserDto
+	err := json.NewDecoder(r.Body).Decode(&createUserDto)
 	defer r.Body.Close()
 	if err != nil {
 		log.Println(err)
-		SendError(w, http.StatusBadRequest,
+		RespondWithError(w, http.StatusBadRequest,
 			"Error while decoding request body: "+err.Error())
 		return
 	}
 
-	// Validate input
-	if input.Name == "" || input.Email == "" || input.Password == "" {
-		SendError(w, http.StatusBadRequest,
-			"Name, email, and password are required")
-		return
-	}
-
-	hashedPassword, err := helpers.HashPassword(input.Password)
+	hashedPassword, err := helpers.HashPassword(createUserDto.Password)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"Error while hashing the password")
 		return
 	}
 
-	// Create User from input
+	validationErr := helpers.ValidateStruct(createUserDto)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
 	user := &models.User{
-		Name:      input.Name,
-		Email:     input.Email,
+		Name:      createUserDto.Name,
+		Email:     createUserDto.Email,
 		Password:  hashedPassword,
 		Role:      "user",
 		CreatedAt: time.Now(),
@@ -78,13 +76,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	createdUser, err := h.service.CreateUser(ctx, user)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"Error while creating new user: "+err.Error())
 		return
 	}
 
-	// Return response without password
-	SendSuccess(w, http.StatusCreated, "User created successfully",
+	RespondWithJSON(w, http.StatusCreated,
 		createdUser.ToResponse())
 }
 
@@ -95,35 +92,42 @@ func (h *UserHandler) GetOneUser(w http.ResponseWriter, r *http.Request) {
 	userId := r.PathValue("id")
 	user, err := h.service.GetOneUser(ctx, userId)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError, "error while getting one user")
+		RespondWithError(w, http.StatusInternalServerError,
+			"error while getting one user")
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "User fetched successfully", user)
+	RespondWithJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var userData *models.User
-	err := json.NewDecoder(r.Body).Decode(&userData)
+	var updateUserDto dto.UpdateUserDto
+	err := json.NewDecoder(r.Body).Decode(&updateUserDto)
 	if err != nil {
 		log.Println(err)
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"Error while decoding request body")
 		return
 	}
 
+	validationErr := helpers.ValidateStruct(updateUserDto)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
 	userId := r.PathValue("id")
-	updatedUser, err := h.service.UpdateUser(ctx, userId, userData)
+	updatedUser, err := h.service.UpdateUser(ctx, userId, &updateUserDto)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"error while updating one user")
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "User updated successfully", updatedUser)
+	RespondWithJSON(w, http.StatusOK, updatedUser)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -134,9 +138,9 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.DeleteUser(ctx, userId)
 	if err != nil {
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"error while deleting one user")
 	}
 
-	SendSuccess(w, http.StatusOK, "User Deleted successfully", nil)
+	RespondWithJSON(w, http.StatusOK, nil)
 }

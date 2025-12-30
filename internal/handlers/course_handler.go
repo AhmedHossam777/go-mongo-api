@@ -8,7 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AhmedHossam777/go-mongo/internal/models"
+	"github.com/AhmedHossam777/go-mongo/internal/dto"
+	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
 )
 
@@ -26,27 +27,35 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var course models.Course
-	err := json.NewDecoder(r.Body).Decode(&course)
+	var courseDto dto.CreateCourseDto
+	err := json.NewDecoder(r.Body).Decode(&courseDto)
+	log.Println(courseDto)
 	if err != nil {
-		SendError(w, http.StatusBadRequest, "Invalid request body, "+err.Error())
+		RespondWithError(w, http.StatusBadRequest,
+			"Invalid request body, "+err.Error())
 		return
 	}
+
 	defer r.Body.Close()
 
-	createdCourse, err := h.service.CreateCourse(ctx, &course)
+	validationErrors := helpers.ValidateStruct(courseDto)
+	if validationErrors != nil {
+		RespondWithValidationErrors(w, validationErrors)
+		return
+	}
+
+	createdCourse, err := h.service.CreateCourse(ctx, &courseDto)
 
 	if err != nil {
 		if errors.Is(err, services.ErrCourseNameRequired) {
-			SendError(w, http.StatusBadRequest, err.Error())
+			RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		SendError(w, http.StatusInternalServerError, "Error creating course")
+		RespondWithError(w, http.StatusInternalServerError, "Error creating course")
 		return
 	}
 
-	SendSuccess(w, http.StatusCreated, "Course created successfully",
-		createdCourse)
+	RespondWithJSON(w, http.StatusCreated, createdCourse)
 }
 
 func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
@@ -55,12 +64,12 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 
 	courses, err := h.service.GetAllCourses(ctx)
 	if err != nil {
-		log.Println(err)
-		SendError(w, http.StatusInternalServerError, "Error fetching courses")
+		RespondWithError(w, http.StatusInternalServerError,
+			"Error fetching courses")
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "Courses fetched successfully", courses)
+	RespondWithJSON(w, http.StatusOK, courses)
 }
 
 func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {
@@ -73,22 +82,22 @@ func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCourseID) {
-			SendError(w, http.StatusBadRequest, "Invalid course ID")
+			RespondWithError(w, http.StatusBadRequest, "Invalid course ID")
 			return
 		}
 
 		if errors.Is(err, services.ErrCourseNotFound) {
-			SendError(w, http.StatusNotFound, "Course not found")
+			RespondWithError(w, http.StatusNotFound, "Course not found")
 			return
 		}
 
-		SendError(w, http.StatusInternalServerError,
+		RespondWithError(w, http.StatusInternalServerError,
 			"Error while fetching the course")
 
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "Course fetched successfully", course)
+	RespondWithJSON(w, http.StatusOK, course)
 }
 
 func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
@@ -97,34 +106,25 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 
 	courseId := r.PathValue("id")
 
-	var updatedData models.Course
-	err := json.NewDecoder(r.Body).Decode(&updatedData)
+	var updatedCourseDto dto.UpdateCourseDto
+	err := json.NewDecoder(r.Body).Decode(&updatedCourseDto)
 	if err != nil {
-		SendError(w, http.StatusBadRequest, "invalid request body "+err.Error())
+		RespondWithError(w, http.StatusBadRequest,
+			"invalid request body "+err.Error())
 		return
 	}
 	defer r.Body.Close()
 
-	updatedCourse, err := h.service.UpdateCourse(ctx, courseId, &updatedData)
+	validationErr := helpers.ValidateStruct(updatedCourseDto)
 
-	if err != nil {
-		if errors.Is(err, services.ErrInvalidCourseID) {
-			SendError(w, http.StatusBadRequest, "Invalid course ID")
-			return
-		}
-		if errors.Is(err, services.ErrCourseNotFound) {
-			SendError(w, http.StatusNotFound, "Course not found")
-			return
-		}
-		if errors.Is(err, services.ErrNoFieldsToUpdate) {
-			SendError(w, http.StatusBadRequest, "Not enough fields to update")
-			return
-		}
-
-		SendError(w, http.StatusInternalServerError, "Error while updating course")
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
 	}
 
-	SendSuccess(w, http.StatusOK, "course updated successfully", updatedCourse)
+	updatedCourse, err := h.service.UpdateCourse(ctx, courseId, &updatedCourseDto)
+
+	RespondWithJSON(w, http.StatusOK, updatedCourse)
 
 }
 
@@ -140,16 +140,16 @@ func (h *CourseHandler) DeleteOneCourse(
 
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCourseID) {
-			SendError(w, http.StatusBadRequest, "Invalid course ID")
+			RespondWithError(w, http.StatusBadRequest, "Invalid course ID")
 			return
 		}
 		if errors.Is(err, services.ErrCourseNotFound) {
-			SendError(w, http.StatusNotFound, "Course not found")
+			RespondWithError(w, http.StatusNotFound, "Course not found")
 			return
 		}
-		SendError(w, http.StatusInternalServerError, "Error deleting course")
+		RespondWithError(w, http.StatusInternalServerError, "Error deleting course")
 		return
 	}
 
-	SendSuccess(w, http.StatusOK, "Course deleted successfully", nil)
+	RespondWithJSON(w, http.StatusOK, nil)
 }

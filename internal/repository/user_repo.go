@@ -19,7 +19,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	GetOneUser(ctx context.Context, id primitive.ObjectID) (*models.User, error)
-	UpdateOneUser(ctx context.Context, id primitive.ObjectID, user *models.User) (
+	UpdateOneUser(ctx context.Context, id primitive.ObjectID, update bson.M) (
 		*models.User, error,
 	)
 	DeleteOneUser(ctx context.Context, id primitive.ObjectID) error
@@ -89,31 +89,12 @@ func (r *userRepo) GetOneUser(
 }
 
 func (r *userRepo) UpdateOneUser(
-	ctx context.Context, id primitive.ObjectID, user *models.User,
+	ctx context.Context, id primitive.ObjectID, update bson.M,
 ) (
 	*models.User, error,
 ) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
-
-	update := bson.M{"$set": bson.M{}}
-	setFields := update["$set"].(bson.M)
-
-	if user.Name != "" {
-		setFields["name"] = user.Name
-	}
-
-	if user.Email != "" {
-		setFields["email"] = user.Email
-	}
-
-	if user.Role != "" {
-		setFields["role"] = user.Role
-	}
-
-	if user.Password != "" {
-		setFields["password"] = user.Password
-	}
 
 	updateResult, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, update)
 
