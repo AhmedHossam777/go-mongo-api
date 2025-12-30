@@ -9,7 +9,6 @@ import (
 
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
-	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
 )
 
@@ -105,8 +104,8 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 
 	courseId := r.PathValue("id")
 
-	var updatedData models.Course
-	err := json.NewDecoder(r.Body).Decode(&updatedData)
+	var updatedCourseDto dto.UpdateCourseDto
+	err := json.NewDecoder(r.Body).Decode(&updatedCourseDto)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest,
 			"invalid request body "+err.Error())
@@ -114,25 +113,7 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	updatedCourse, err := h.service.UpdateCourse(ctx, courseId, &updatedData)
-
-	if err != nil {
-		if errors.Is(err, services.ErrInvalidCourseID) {
-			RespondWithError(w, http.StatusBadRequest, "Invalid course ID")
-			return
-		}
-		if errors.Is(err, services.ErrCourseNotFound) {
-			RespondWithError(w, http.StatusNotFound, "Course not found")
-			return
-		}
-		if errors.Is(err, services.ErrNoFieldsToUpdate) {
-			RespondWithError(w, http.StatusBadRequest, "Not enough fields to update")
-			return
-		}
-
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error while updating course")
-	}
+	updatedCourse, err := h.service.UpdateCourse(ctx, courseId, &updatedCourseDto)
 
 	RespondWithJSON(w, http.StatusOK, updatedCourse)
 

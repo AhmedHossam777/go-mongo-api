@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CourseRepository interface {
@@ -17,7 +19,7 @@ type CourseRepository interface {
 		*models.Course, error,
 	)
 	UpdateOne(
-		ctx context.Context, courseId primitive.ObjectID, course *models.Course,
+		ctx context.Context, courseId primitive.ObjectID, update bson.M,
 	) (
 		*models.Course, error,
 	)
@@ -95,38 +97,27 @@ func (r *courseRepository) FindOne(
 }
 
 func (r courseRepository) UpdateOne(
-	ctx context.Context, id primitive.ObjectID, course *models.Course,
+	ctx context.Context, id primitive.ObjectID, update bson.M,
 ) (*models.Course, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	update := bson.M{"$set": bson.M{}}
-	setFields := update["$set"].(bson.M)
+	filter := bson.M{"_id": id}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	var updatedCourse models.Course
 
-	if course.CourseName != "" {
-		setFields["course_name"] = course.CourseName
-	}
-	if course.Price != 0 {
-		setFields["course_price"] = course.Price
-	}
-	if course.Author != nil {
-		setFields["author"] = course.Author
-	}
+	err := r.collection.FindOneAndUpdate(ctx, filter, update,
+		opts).Decode(&updatedCourse)
 
-	result, err := r.collection.UpdateOne(ctx, bson.M{"_id": id}, update)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("course not found")
+		}
 		return nil, err
 	}
 
-	if result.MatchedCount == 0 {
-		return nil, mongo.ErrNoDocuments
-	}
-
-	//* here we created a new context as the time of the original context my be ended
-	fetchCtx, fetchCancel := context.WithTimeout(context.Background(), r.timeout)
-	defer fetchCancel()
-	return r.FindOne(fetchCtx, id)
+	return &updatedCourse, nil
 }
 
 func (r *courseRepository) DeleteOne(

@@ -7,6 +7,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/repository"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -25,7 +26,7 @@ type CourseService interface {
 	GetAllCourses(ctx context.Context) ([]models.Course, error)
 	GetCourseByID(ctx context.Context, id string) (*models.Course, error)
 	UpdateCourse(
-		ctx context.Context, id string, course *models.Course,
+		ctx context.Context, id string, updateCourseDto *dto.UpdateCourseDto,
 	) (*models.Course, error)
 	DeleteCourse(ctx context.Context, id string) error
 }
@@ -77,19 +78,23 @@ func (s *courseService) GetCourseByID(ctx context.Context, id string) (
 }
 
 func (s *courseService) UpdateCourse(
-	ctx context.Context, id string, course *models.Course,
+	ctx context.Context, id string, updateCourseDto *dto.UpdateCourseDto,
 ) (*models.Course, error) {
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, ErrInvalidCourseID
 	}
 
-	if course.CourseName == "" && course.Price == 0 && course.Author == nil {
-		return nil, ErrNoFieldsToUpdate
+	var update = bson.M{}
+	if updateCourseDto.CourseName != nil {
+		update["CourseName"] = *updateCourseDto.CourseName
+	}
+	if updateCourseDto.Price != nil {
+		update["Price"] = *updateCourseDto.Price
 	}
 
-	updateCourse, err := s.repo.UpdateOne(ctx, objectId, course)
-	if err == mongo.ErrNoDocuments {
+	updateCourse, err := s.repo.UpdateOne(ctx, objectId, bson.M{"$set": update})
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrCourseNotFound
 	}
 	if err != nil {
