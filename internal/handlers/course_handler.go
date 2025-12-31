@@ -47,10 +47,6 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	createdCourse, err := h.service.CreateCourse(ctx, &courseDto)
 
 	if err != nil {
-		if errors.Is(err, services.ErrCourseNameRequired) {
-			RespondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
 		RespondWithError(w, http.StatusInternalServerError, "Error creating course")
 		return
 	}
