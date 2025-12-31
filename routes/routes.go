@@ -9,6 +9,7 @@ import (
 
 func SetupRoutes(
 	userHandler *handlers.UserHandler, courseHandler *handlers.CourseHandler,
+	authHandler *handlers.AuthHandler,
 ) *http.ServeMux {
 
 	router := http.NewServeMux()
@@ -18,6 +19,7 @@ func SetupRoutes(
 
 	RegisterCourseRoutes(router, courseHandler)
 	RegisterUserRoutes(router, userHandler)
+	RegisterAuthRouts(router, authHandler)
 
 	return router
 }

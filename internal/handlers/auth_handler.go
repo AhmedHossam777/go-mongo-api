@@ -45,7 +45,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	authResponse, err := h.authService.Register(ctx, registerDto)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest,
-			"Error while register"+err.Error())
+			"Error while register, "+err.Error())
+		return
 	}
 
 	RespondWithJSON(w, http.StatusCreated, authResponse)
@@ -72,7 +73,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	authResponse, err := h.authService.Login(ctx, loginDto)
 	if err != nil {
 		RespondWithError(w, http.StatusBadRequest,
-			"Error while login"+err.Error())
+			"Error while login, "+err.Error())
+		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, authResponse)

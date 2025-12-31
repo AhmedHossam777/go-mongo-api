@@ -29,12 +29,15 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService)
 
+	authService := services.NewAuthService(userService)
+	authHandler := handlers.NewAuthHandler(authService)
+
 	port := cnfg.Port
 	if port == "" {
 		port = "3000"
 	}
 
-	router := routes.SetupRoutes(userHandler, courseHandler)
+	router := routes.SetupRoutes(userHandler, courseHandler, authHandler)
 
 	fmt.Println("╔════════════════════════════════════════════════════╗")
 	fmt.Println("║       Go-MongoDB Course API Server                ║")

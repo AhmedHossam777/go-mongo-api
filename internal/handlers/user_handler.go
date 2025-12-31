@@ -31,7 +31,7 @@ func (h *UserHandler) GetAllUsers(
 	if err != nil {
 		log.Println(err)
 		RespondWithError(w, http.StatusInternalServerError,
-			"error while fetching all user"+err.Error())
+			"error while fetching all user, "+err.Error())
 		return
 	}
 
@@ -138,7 +138,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.service.DeleteUser(ctx, userId)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError,
-			"error while deleting one user")
+			"error while deleting one user, "+err.Error())
+		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, nil)

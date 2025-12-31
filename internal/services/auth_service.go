@@ -86,6 +86,11 @@ func (s *authService) Login(
 		return nil, ErrInvalidCredentials
 	}
 
+	isCorrect := helpers.CheckPassword(existedUser.Password, loginDto.Password)
+	if !isCorrect {
+		return nil, ErrInvalidCredentials
+	}
+
 	token, err := helpers.GenerateToken(existedUser.ID, existedUser.Email,
 		existedUser.Role)
 
