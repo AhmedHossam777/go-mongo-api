@@ -71,7 +71,7 @@ func (s *userService) GetUserByEmail(
 	ctx context.Context, email string,
 ) (*models.User, error) {
 	user, err := s.repo.GetUserByEmail(ctx, email)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrUserNotFound
 	}
 

@@ -1,5 +1,7 @@
 package dto
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type RegisterDto struct {
 	Name     string `json:"name" validate:"required,min=2,max=100"`
 	Email    string `json:"email" validate:"required,email"`
@@ -17,7 +19,7 @@ type AuthResponse struct {
 }
 
 type UserResponse struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID    primitive.ObjectID `json:"id"`
+	Name  string             `json:"name"`
+	Email string             `json:"email"`
 }
