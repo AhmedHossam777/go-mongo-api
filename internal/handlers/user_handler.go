@@ -46,7 +46,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&createUserDto)
 	defer r.Body.Close()
 	if err != nil {
-		log.Println(err)
 		RespondWithError(w, http.StatusBadRequest,
 			"Error while decoding request body: "+err.Error())
 		return
