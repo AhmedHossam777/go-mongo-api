@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -36,6 +37,24 @@ func (h *UserHandler) GetAllUsers(
 	}
 
 	RespondWithJSON(w, http.StatusOK, users)
+}
+
+func (h *UserHandler) GetMe(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userId := r.Context().Value("userId").(string)
+	fmt.Println("userId: ", userId)
+	user, err := h.service.GetOneUser(ctx, userId)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError,
+			"error while getting one user")
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {

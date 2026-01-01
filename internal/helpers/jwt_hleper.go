@@ -41,7 +41,7 @@ func GenerateToken(
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "courses-api",
 			Subject:   userId.Hex(),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expirationHours))),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expirationHours) * time.Hour)),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

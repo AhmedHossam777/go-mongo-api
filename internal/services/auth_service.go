@@ -49,6 +49,7 @@ func (s *authService) Register(
 		Name:      registerDto.Name,
 		Email:     registerDto.Email,
 		Password:  hashedPassword,
+		Role:      "user",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
