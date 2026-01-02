@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type userRepo struct {
@@ -17,7 +18,9 @@ type userRepo struct {
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
-	GetAllUsers(ctx context.Context) ([]models.User, error)
+	GetAllUsers(ctx context.Context, page int64, pageSize int64) (
+		[]models.User, int64, error,
+	)
 	GetOneUser(ctx context.Context, id primitive.ObjectID) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	UpdateOneUser(ctx context.Context, id primitive.ObjectID, update bson.M) (
@@ -50,28 +53,42 @@ func (r *userRepo) CreateUser(
 	return user, nil
 }
 
-func (r *userRepo) GetAllUsers(ctx context.Context) ([]models.User, error) {
+func (r *userRepo) GetAllUsers(
+	ctx context.Context, page int64, pageSize int64,
+) ([]models.User, int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	skip := (page - 1) * pageSize
+
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}). // Sort by newest first
+		SetSkip(skip).
+		SetLimit(pageSize)
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
+	defer cursor.Close(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var users []models.User
 
 	err = cursor.All(ctx, &users)
-
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if users == nil {
 		users = []models.User{}
 	}
 
-	return users, nil
+	totalCount, err := r.collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return users, totalCount, nil
 }
 
 func (r *userRepo) GetOneUser(

@@ -14,6 +14,31 @@ type APIResponse struct {
 	Errors  interface{} `json:"errors,omitempty"`
 }
 
+type PaginatedResponse struct {
+	Data       interface{} `json:"data"`
+	Page       int         `json:"page,omitempty"`
+	Count      int         `json:"count"`
+	TotalCount int64       `json:"total_count,omitempty"`
+	NextCursor string      `json:"next_cursor,omitempty"`
+	HasMore    bool        `json:"has_more"`
+}
+
+func PaginationResponse(
+	w http.ResponseWriter, statusCode int, data interface{}, page int,
+	count int, totalCount int64, hasMore bool,
+) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	json.NewEncoder(w).Encode(PaginatedResponse{
+		Data:       data,
+		Page:       page,
+		Count:      count,
+		TotalCount: totalCount,
+		HasMore:    hasMore,
+	})
+}
+
 func RespondWithJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

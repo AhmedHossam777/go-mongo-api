@@ -14,7 +14,9 @@ import (
 
 type CourseRepository interface {
 	Create(ctx context.Context, course *models.Course) (*models.Course, error)
-	FindAll(ctx context.Context) ([]models.Course, error)
+	FindAll(ctx context.Context, page int64, pageSize int64) (
+		[]models.Course, int, error,
+	)
 	FindOne(ctx context.Context, courseId primitive.ObjectID) (
 		*models.Course, error,
 	)
@@ -54,22 +56,33 @@ func (r *courseRepository) Create(
 	return course, nil
 }
 
-func (r *courseRepository) FindAll(ctx context.Context) (
-	[]models.Course, error,
+func (r *courseRepository) FindAll(
+	ctx context.Context, page int64, pageSize int64,
+) (
+	[]models.Course, int, error,
 ) {
 
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	cursor, err := r.collection.Find(ctx, bson.M{})
+	skip := (page - 1) * pageSize
+
+	findOptions := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}}). // Sort by newest first
+		SetSkip(skip).
+		SetLimit(pageSize)
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
+	defer cursor.Close(ctx)
+
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var courses []models.Course
 	err = cursor.All(ctx, &courses)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// if courses table is empty return empty slice not nil
@@ -77,7 +90,12 @@ func (r *courseRepository) FindAll(ctx context.Context) (
 		courses = []models.Course{}
 	}
 
-	return courses, nil
+	totalCount, err := r.collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return courses, int(totalCount), nil
 }
 
 func (r *courseRepository) FindOne(

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
@@ -58,14 +59,35 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	courses, err := h.service.GetAllCourses(ctx)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10 // Default to 10
+	}
+
+	courses, totalCount, err := h.service.GetAllCourses(ctx, int64(page),
+		int64(pageSize))
+
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError,
 			"Error fetching courses")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, courses)
+	hasMore := false
+	count := pageSize
+	if totalCount > (page * pageSize) {
+		hasMore = true
+	} else {
+		count = pageSize - (page*pageSize - totalCount)
+	}
+
+	PaginationResponse(w, http.StatusOK, courses, page, count, int64(totalCount),
+		hasMore)
 }
 
 func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {

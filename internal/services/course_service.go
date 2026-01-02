@@ -21,7 +21,9 @@ type CourseService interface {
 	CreateCourse(ctx context.Context, courseDto *dto.CreateCourseDto) (
 		*models.Course, error,
 	)
-	GetAllCourses(ctx context.Context) ([]models.Course, error)
+	GetAllCourses(ctx context.Context, page, pageSize int64) (
+		[]models.Course, int, error,
+	)
 	GetCourseByID(ctx context.Context, id string) (*models.Course, error)
 	UpdateCourse(
 		ctx context.Context, id string, updateCourseDto *dto.UpdateCourseDto,
@@ -47,10 +49,12 @@ func (s *courseService) CreateCourse(
 	return s.repo.Create(ctx, course)
 }
 
-func (s *courseService) GetAllCourses(ctx context.Context) (
-	[]models.Course, error,
+func (s *courseService) GetAllCourses(
+	ctx context.Context, page, pageSize int64,
+) (
+	[]models.Course, int, error,
 ) {
-	return s.repo.FindAll(ctx)
+	return s.repo.FindAll(ctx, page, pageSize)
 }
 
 func (s *courseService) GetCourseByID(ctx context.Context, id string) (
