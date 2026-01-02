@@ -15,7 +15,7 @@ func RegisterUserRoutes(
 	router.HandleFunc("GET "+basePath, userHandler.GetAllUsers)
 	router.HandleFunc("GET "+basePath+"/{id}", userHandler.GetOneUser)
 	router.HandleFunc("PATCH "+basePath+"/{id}", userHandler.UpdateUser)
-	router.HandleFunc("DELETE "+basePath+"/{id}", userHandler.DeleteUser)
+	//router.HandleFunc("DELETE "+basePath+"/{id}", userHandler.DeleteUser)
 
 	protected := []struct {
 		method  string
@@ -30,6 +30,10 @@ func RegisterUserRoutes(
 			middlewares.AuthMiddleware(route.handler))
 	}
 
+	//? admin only routes
+	router.Handle("DELETE "+basePath+"/{id}", middlewares.AuthMiddleware(
+		middlewares.RoleMiddleware("admin")(http.HandlerFunc(userHandler.DeleteUser)),
+	))
 	// Future user-related endpoints could include:
 	// router.HandleFunc("POST /users/login", handler.Login)
 	// router.HandleFunc("POST /users/logout", handler.Logout)

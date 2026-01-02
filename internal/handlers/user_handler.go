@@ -83,11 +83,15 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if createUserDto.Role == "" {
+		createUserDto.Role = "user"
+	}
+
 	user := &models.User{
 		Name:      createUserDto.Name,
 		Email:     createUserDto.Email,
 		Password:  hashedPassword,
-		Role:      "user",
+		Role:      createUserDto.Role,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
