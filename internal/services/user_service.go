@@ -13,18 +13,15 @@ import (
 )
 
 var (
-	ErrUserNotFound         = errors.New("user not found")
-	ErrInvalidUserID        = errors.New("invalid user ID")
-	ErrUsernameRequired     = errors.New("username is required")
-	ErrPasswordRequired     = errors.New("password is required")
-	ErrEmailRequired        = errors.New("email is required")
-	ErrNoFieldsToUpdateUser = errors.New("no fields to update")
+	ErrUserNotFound  = errors.New("user not found")
+	ErrInvalidUserID = errors.New("invalid user ID")
 )
 
 type UserService interface {
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	GetOneUser(ctx context.Context, id string) (*models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	UpdateUser(ctx context.Context, id string, user *dto.UpdateUserDto) (
 		*models.User, error,
 	)
@@ -61,6 +58,20 @@ func (s *userService) GetOneUser(
 
 	user, err := s.repo.GetOneUser(ctx, objId)
 	if err == mongo.ErrNoDocuments {
+		return nil, ErrUserNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+func (s *userService) GetUserByEmail(
+	ctx context.Context, email string,
+) (*models.User, error) {
+	user, err := s.repo.GetUserByEmail(ctx, email)
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrUserNotFound
 	}
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
+	"github.com/AhmedHossam777/go-mongo/middlewares"
 )
 
 func RegisterUserRoutes(
@@ -14,8 +15,25 @@ func RegisterUserRoutes(
 	router.HandleFunc("GET "+basePath, userHandler.GetAllUsers)
 	router.HandleFunc("GET "+basePath+"/{id}", userHandler.GetOneUser)
 	router.HandleFunc("PATCH "+basePath+"/{id}", userHandler.UpdateUser)
-	router.HandleFunc("DELETE "+basePath+"/{id}", userHandler.DeleteUser)
+	//router.HandleFunc("DELETE "+basePath+"/{id}", userHandler.DeleteUser)
 
+	protected := []struct {
+		method  string
+		path    string
+		handler http.HandlerFunc
+	}{
+		{"GET", "/api/v1/users/me", userHandler.GetMe},
+	}
+
+	for _, route := range protected {
+		router.Handle(route.method+" "+route.path,
+			middlewares.AuthMiddleware(route.handler))
+	}
+
+	//? admin only routes
+	router.Handle("DELETE "+basePath+"/{id}", middlewares.AuthMiddleware(
+		middlewares.RoleMiddleware("admin")(http.HandlerFunc(userHandler.DeleteUser)),
+	))
 	// Future user-related endpoints could include:
 	// router.HandleFunc("POST /users/login", handler.Login)
 	// router.HandleFunc("POST /users/logout", handler.Logout)

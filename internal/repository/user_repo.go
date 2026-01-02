@@ -19,6 +19,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	GetAllUsers(ctx context.Context) ([]models.User, error)
 	GetOneUser(ctx context.Context, id primitive.ObjectID) (*models.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	UpdateOneUser(ctx context.Context, id primitive.ObjectID, update bson.M) (
 		*models.User, error,
 	)
@@ -81,6 +82,20 @@ func (r *userRepo) GetOneUser(
 
 	var user *models.User
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+func (r *userRepo) GetUserByEmail(
+	ctx context.Context, email string,
+) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
+	var user *models.User
+	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}

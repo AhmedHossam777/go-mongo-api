@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -31,11 +32,29 @@ func (h *UserHandler) GetAllUsers(
 	if err != nil {
 		log.Println(err)
 		RespondWithError(w, http.StatusInternalServerError,
-			"error while fetching all user"+err.Error())
+			"error while fetching all user, "+err.Error())
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, users)
+}
+
+func (h *UserHandler) GetMe(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userId := r.Context().Value("userId").(string)
+	fmt.Println("userId: ", userId)
+	user, err := h.service.GetOneUser(ctx, userId)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError,
+			"error while getting one user")
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +65,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&createUserDto)
 	defer r.Body.Close()
 	if err != nil {
-		log.Println(err)
 		RespondWithError(w, http.StatusBadRequest,
 			"Error while decoding request body: "+err.Error())
 		return
@@ -65,11 +83,15 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if createUserDto.Role == "" {
+		createUserDto.Role = "user"
+	}
+
 	user := &models.User{
 		Name:      createUserDto.Name,
 		Email:     createUserDto.Email,
 		Password:  hashedPassword,
-		Role:      "user",
+		Role:      createUserDto.Role,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -139,7 +161,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	err := h.service.DeleteUser(ctx, userId)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError,
-			"error while deleting one user")
+			"error while deleting one user, "+err.Error())
+		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, nil)

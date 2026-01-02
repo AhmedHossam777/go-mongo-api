@@ -13,10 +13,8 @@ import (
 )
 
 var (
-	ErrCourseNotFound     = errors.New("course not found")
-	ErrInvalidCourseID    = errors.New("invalid course ID")
-	ErrCourseNameRequired = errors.New("course name is required")
-	ErrNoFieldsToUpdate   = errors.New("no fields to update")
+	ErrCourseNotFound  = errors.New("course not found")
+	ErrInvalidCourseID = errors.New("invalid course ID")
 )
 
 type CourseService interface {
@@ -45,9 +43,6 @@ func (s *courseService) CreateCourse(
 	course := &models.Course{
 		CourseName: courseDto.CourseName,
 		Price:      courseDto.Price,
-	}
-	if course.CourseName == "" {
-		return nil, ErrCourseNameRequired
 	}
 	return s.repo.Create(ctx, course)
 }
