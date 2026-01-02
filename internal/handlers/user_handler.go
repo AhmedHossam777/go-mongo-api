@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
@@ -28,7 +29,19 @@ func (h *UserHandler) GetAllUsers(
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	users, err := h.service.GetAllUsers(ctx)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10 // Default to 10
+	}
+
+	users, totalCount, err := h.service.GetAllUsers(ctx, int64(page),
+		int64(pageSize))
+
 	if err != nil {
 		log.Println(err)
 		RespondWithError(w, http.StatusInternalServerError,
@@ -36,7 +49,17 @@ func (h *UserHandler) GetAllUsers(
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, users)
+	hasMore := false
+	count := pageSize
+	if int(totalCount) > (page * pageSize) {
+		hasMore = true
+	} else {
+		count = pageSize - (page*pageSize - int(totalCount))
+	}
+
+	PaginationResponse(w, http.StatusOK, users, page, count,
+		totalCount,
+		hasMore)
 }
 
 func (h *UserHandler) GetMe(

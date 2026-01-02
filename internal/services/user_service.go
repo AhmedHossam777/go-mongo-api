@@ -18,7 +18,9 @@ var (
 )
 
 type UserService interface {
-	GetAllUsers(ctx context.Context) ([]models.User, error)
+	GetAllUsers(ctx context.Context, page, pageSize int64) (
+		[]models.User, int64, error,
+	)
 	CreateUser(ctx context.Context, user *models.User) (*models.User, error)
 	GetOneUser(ctx context.Context, id string) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
@@ -43,9 +45,9 @@ func (s *userService) CreateUser(
 }
 
 func (s *userService) GetAllUsers(
-	ctx context.Context,
-) ([]models.User, error) {
-	return s.repo.GetAllUsers(ctx)
+	ctx context.Context, page int64, pageSize int64,
+) ([]models.User, int64, error) {
+	return s.repo.GetAllUsers(ctx, page, pageSize)
 }
 
 func (s *userService) GetOneUser(
