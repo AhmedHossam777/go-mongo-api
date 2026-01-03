@@ -27,6 +27,7 @@ type UserRepository interface {
 		*models.User, error,
 	)
 	DeleteOneUser(ctx context.Context, id primitive.ObjectID) error
+	DropUserCollection(ctx context.Context) error
 }
 
 func NewUserRepo(db *mongo.Database) UserRepository {
@@ -155,6 +156,18 @@ func (r *userRepo) DeleteOneUser(
 	}
 	if deleteResult.DeletedCount == 0 {
 		return mongo.ErrNoDocuments
+	}
+
+	return nil
+}
+
+func (r *userRepo) DropUserCollection(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
+	err := r.collection.Drop(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil

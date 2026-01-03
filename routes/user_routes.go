@@ -34,6 +34,9 @@ func RegisterUserRoutes(
 	router.Handle("DELETE "+basePath+"/{id}", middlewares.AuthMiddleware(
 		middlewares.RoleMiddleware("admin")(http.HandlerFunc(userHandler.DeleteUser)),
 	))
+	router.Handle("DELETE "+basePath, middlewares.AuthMiddleware(
+		middlewares.RoleMiddleware("admin")(http.HandlerFunc(userHandler.DropUserCollection)),
+	))
 	// Future user-related endpoints could include:
 	// router.HandleFunc("POST /users/login", handler.Login)
 	// router.HandleFunc("POST /users/logout", handler.Logout)

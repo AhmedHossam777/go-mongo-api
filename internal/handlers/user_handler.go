@@ -190,3 +190,19 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(w, http.StatusOK, nil)
 }
+
+func (h *UserHandler) DropUserCollection(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := h.service.DropUserCollection(ctx)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError,
+			"error while deleting all users, "+err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, nil)
+}

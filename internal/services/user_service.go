@@ -28,6 +28,7 @@ type UserService interface {
 		*models.User, error,
 	)
 	DeleteUser(ctx context.Context, id string) error
+	DropUserCollection(ctx context.Context) error
 }
 
 type userService struct {
@@ -127,6 +128,14 @@ func (s *userService) DeleteUser(
 
 	if err == mongo.ErrNoDocuments {
 		return ErrCourseNotFound
+	}
+	return nil
+}
+
+func (s *userService) DropUserCollection(ctx context.Context) error {
+	err := s.repo.DropUserCollection(ctx)
+	if err != nil {
+		return err
 	}
 	return nil
 }
