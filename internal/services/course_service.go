@@ -42,6 +42,7 @@ func NewCourseService(repo repository.CourseRepository) CourseService {
 func (s *courseService) CreateCourse(
 	ctx context.Context, courseDto *dto.CreateCourseDto,
 ) (*models.Course, error) {
+
 	course := &models.Course{
 		CourseName: courseDto.CourseName,
 		Price:      courseDto.Price,
@@ -66,7 +67,7 @@ func (s *courseService) GetCourseByID(ctx context.Context, id string) (
 	}
 
 	course, err := s.repo.FindOne(ctx, objectId)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrCourseNotFound
 	}
 	if err != nil {
