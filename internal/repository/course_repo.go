@@ -26,6 +26,7 @@ type CourseRepository interface {
 		*models.Course, error,
 	)
 	DeleteOne(ctx context.Context, courseId primitive.ObjectID) error
+	Drop(ctx context.Context) error
 }
 
 type courseRepository struct {
@@ -151,6 +152,18 @@ func (r *courseRepository) DeleteOne(
 
 	if deleteResult.DeletedCount == 0 {
 		return mongo.ErrNoDocuments
+	}
+
+	return nil
+}
+
+func (r *courseRepository) Drop(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
+	err := r.collection.Drop(ctx)
+	if err != nil {
+		return err
 	}
 
 	return nil

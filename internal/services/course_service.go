@@ -29,6 +29,7 @@ type CourseService interface {
 		ctx context.Context, id string, updateCourseDto *dto.UpdateCourseDto,
 	) (*models.Course, error)
 	DeleteCourse(ctx context.Context, id string) error
+	Drop(ctx context.Context) error
 }
 
 type courseService struct {
@@ -115,5 +116,14 @@ func (s *courseService) DeleteCourse(ctx context.Context, id string) error {
 	if err == mongo.ErrNoDocuments {
 		return ErrCourseNotFound
 	}
+	return nil
+}
+
+func (s *courseService) Drop(ctx context.Context) error {
+	err := s.repo.Drop(ctx)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

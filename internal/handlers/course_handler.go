@@ -168,3 +168,18 @@ func (h *CourseHandler) DeleteOneCourse(
 
 	RespondWithJSON(w, http.StatusOK, nil)
 }
+
+func (h *CourseHandler) Drop(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := h.service.Drop(ctx)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError,
+			"Error deleting all courses")
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, nil)
+}
