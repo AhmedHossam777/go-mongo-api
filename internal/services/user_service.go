@@ -107,7 +107,7 @@ func (s *userService) UpdateUser(
 
 	updatedUser, err := s.repo.UpdateOneUser(ctx, objId, bson.M{"$set": update})
 
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrUserNotFound
 	}
 
@@ -126,7 +126,7 @@ func (s *userService) DeleteUser(
 	}
 	err = s.repo.DeleteOneUser(ctx, objId)
 
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return ErrCourseNotFound
 	}
 	return nil

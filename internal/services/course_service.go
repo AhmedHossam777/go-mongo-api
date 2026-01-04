@@ -114,7 +114,7 @@ func (s *courseService) DeleteCourse(ctx context.Context, id string) error {
 
 	err = s.repo.DeleteOne(ctx, objectId)
 
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return ErrCourseNotFound
 	}
 	return nil
