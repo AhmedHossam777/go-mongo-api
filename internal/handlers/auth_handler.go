@@ -9,6 +9,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type AuthHandler struct {
@@ -44,6 +45,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	authResponse, err := h.authService.Register(ctx, registerDto)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			RespondWithError(w, http.StatusBadRequest,
+				"user already exist")
+			return
+		}
 		RespondWithError(w, http.StatusBadRequest,
 			"Error while register, "+err.Error())
 		return

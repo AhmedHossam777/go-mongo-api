@@ -12,6 +12,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type CourseHandler struct {
@@ -50,7 +51,7 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courseDto.AuthorID = mongoUserId
+	courseDto.InstructorId = mongoUserId
 
 	validationErrors := helpers.ValidateStruct(courseDto)
 	if validationErrors != nil {
@@ -61,6 +62,11 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	createdCourse, err := h.service.CreateCourse(ctx, &courseDto)
 
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			RespondWithError(w, http.StatusBadRequest,
+				"duplicated course name")
+			return
+		}
 		RespondWithError(w, http.StatusInternalServerError, "Error creating course")
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/AhmedHossam777/go-mongo/internal/repository"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -59,5 +60,12 @@ func ConnectDB(cfg *Config) (*mongo.Database, error) {
 	}
 
 	fmt.Println("✅ Database connected successfully!")
-	return client.Database(cfg.DBName), nil
+	db := client.Database(cfg.DBName)
+	err = repository.InitializeIndexes(db)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize indexes: %w", err)
+	}
+
+	return db, nil
 }

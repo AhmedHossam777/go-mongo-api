@@ -13,6 +13,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserHandler struct {
@@ -121,6 +122,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	createdUser, err := h.service.CreateUser(ctx, user)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			RespondWithError(w, http.StatusBadRequest,
+				"user already exist")
+			return
+		}
 		RespondWithError(w, http.StatusInternalServerError,
 			"Error while creating new user: "+err.Error())
 		return
