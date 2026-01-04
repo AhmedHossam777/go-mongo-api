@@ -11,6 +11,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type CourseHandler struct {
@@ -27,6 +28,12 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	userId, ok := r.Context().Value("userId").(string)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized,
+			"user id not found")
+		return
+	}
 	var courseDto dto.CreateCourseDto
 	err := json.NewDecoder(r.Body).Decode(&courseDto)
 	if err != nil {
@@ -35,6 +42,15 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	mongoUserId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError,
+			"error while casting userId "+err.Error())
+		return
+	}
+
+	courseDto.AuthorID = mongoUserId
 
 	validationErrors := helpers.ValidateStruct(courseDto)
 	if validationErrors != nil {

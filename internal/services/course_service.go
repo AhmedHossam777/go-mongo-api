@@ -47,6 +47,7 @@ func (s *courseService) CreateCourse(
 	course := &models.Course{
 		CourseName: courseDto.CourseName,
 		Price:      courseDto.Price,
+		Author:     courseDto.AuthorID,
 	}
 	return s.repo.Create(ctx, course)
 }
