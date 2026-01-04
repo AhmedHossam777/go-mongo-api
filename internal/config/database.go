@@ -50,7 +50,27 @@ func ConnectDB(cfg *Config) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoURI))
+	clientOptions := options.Client().
+		ApplyURI(cfg.MongoURI).
+
+		// Good balance for typical web API
+		SetMaxPoolSize(100).  // Handle ~100 concurrent requests
+		SetMinPoolSize(10).   // Keep 10 connections ready
+		SetMaxConnecting(10). // Max 10 establishing connections
+
+		// Reasonable timeouts
+		SetConnectTimeout(10 * time.Second).
+		SetServerSelectionTimeout(5 * time.Second).
+		SetSocketTimeout(30 * time.Second).
+
+		// Idle connection management
+		SetMaxConnIdleTime(60 * time.Second).
+
+		// Enable retries for reliability
+		SetRetryWrites(true).
+		SetRetryReads(true)
+
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
@@ -59,7 +79,11 @@ func ConnectDB(cfg *Config) (*mongo.Database, error) {
 		return nil, fmt.Errorf("error pinging MongoDB: %w", err)
 	}
 
-	fmt.Println("✅ Database connected successfully!")
+	fmt.Println("✓ Connected to MongoDB with optimized connection pool")
+	fmt.Printf("  - Max Pool Size: 100\n")
+	fmt.Printf("  - Min Pool Size: 10\n")
+	fmt.Printf("  - Max Idle Time: 60s\n")
+
 	db := client.Database(cfg.DBName)
 	err = repository.InitializeIndexes(db)
 
