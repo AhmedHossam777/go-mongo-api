@@ -3,11 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -24,8 +27,10 @@ type AuthService interface {
 		*dto.AuthResponse, error,
 	)
 }
+
 type authService struct {
-	userService UserService
+	userService            UserService
+	refreshTokenCollection *mongo.Collection
 }
 
 func NewAuthService(userService UserService) AuthService {
@@ -59,8 +64,12 @@ func (s *authService) Register(
 		return nil, err
 	}
 
-	token, err := helpers.GenerateToken(createdUser.ID, createdUser.Email,
-		createdUser.Role)
+	s.createTokenPair(userModel, r)
+
+	token, err := helpers.GenerateToken(
+		createdUser.ID, createdUser.Email,
+		createdUser.Role,
+	)
 
 	if err != nil {
 		return nil, err
@@ -92,8 +101,10 @@ func (s *authService) Login(
 		return nil, ErrInvalidCredentials
 	}
 
-	token, err := helpers.GenerateToken(existedUser.ID, existedUser.Email,
-		existedUser.Role)
+	token, err := helpers.GenerateToken(
+		existedUser.ID, existedUser.Email,
+		existedUser.Role,
+	)
 
 	if err != nil {
 		return nil, err
@@ -109,4 +120,64 @@ func (s *authService) Login(
 	}
 
 	return authResponse, nil
+}
+
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header (for proxies/load balancers)
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		// Take the first IP in the list
+		return strings.Split(forwarded, ",")[0]
+	}
+	// Check X-Real-IP header
+	realIP := r.Header.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+	// Fall back to RemoteAddr
+	return strings.Split(r.RemoteAddr, ":")[0]
+}
+
+func (s *authService) createTokenPair(user models.User, r *http.Request) (
+	*dto.TokenPair, error,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	accessToken, err := helpers.GenerateToken(user.ID, user.Email, user.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	plainRefreshToken, err := helpers.GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := helpers.HashRefreshToken(plainRefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenDoc := models.RefreshToken{
+		ID:        primitive.NewObjectID(),
+		UserId:    user.ID,
+		Token:     refreshToken,
+		ExpiresAt: helpers.GetRefreshTokenExpiry(),
+		CreatedAt: time.Now(),
+		Revoked:   false,
+		RevokedAt: nil,
+		UserAgent: r.UserAgent(),
+		IPAddress: getClientIP(r),
+	}
+
+	_, err = s.refreshTokenCollection.InsertOne(ctx, refreshTokenDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
