@@ -10,26 +10,51 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type RefreshTokenRepository struct {
+type refreshTokenRepository struct {
 	collection *mongo.Collection
 	timeout    time.Duration
 }
 
-func NewRefreshTokenRepository(db *mongo.Database) *RefreshTokenRepository {
-	return &RefreshTokenRepository{
+type RefreshTokenRepository interface {
+	Create(
+		ctx context.Context, token *models.RefreshToken,
+	) error
+	FindActiveTokens(ctx context.Context) (
+		[]*models.RefreshToken, error,
+	)
+
+	FindActiveTokensByUserID(
+		ctx context.Context, userID primitive.ObjectID,
+	) ([]*models.RefreshToken, error)
+
+	RevokeToken(
+		ctx context.Context, tokenId primitive.ObjectID,
+	) error
+
+	RevokeAllUserTokens(
+		ctx context.Context, userID primitive.ObjectID,
+	) (int64, error)
+
+	DeleteExpiredTokens(ctx context.Context) (
+		int64, error,
+	)
+}
+
+func rewRefreshTokenRepository(db *mongo.Database) RefreshTokenRepository {
+	return &refreshTokenRepository{
 		collection: db.Collection("refresh_token"),
 		timeout:    10 * time.Second,
 	}
 }
 
-func (r *RefreshTokenRepository) Create(
+func (r *refreshTokenRepository) Create(
 	ctx context.Context, token *models.RefreshToken,
 ) error {
 	_, err := r.collection.InsertOne(ctx, token)
 	return err
 }
 
-func (r *RefreshTokenRepository) FindActiveTokens(ctx context.Context) (
+func (r *refreshTokenRepository) FindActiveTokens(ctx context.Context) (
 	[]*models.RefreshToken, error,
 ) {
 	cursor, err := r.collection.Find(
@@ -54,7 +79,7 @@ func (r *RefreshTokenRepository) FindActiveTokens(ctx context.Context) (
 	return refreshTokens, nil
 }
 
-func (r *RefreshTokenRepository) FindActiveTokensByUserID(
+func (r *refreshTokenRepository) FindActiveTokensByUserID(
 	ctx context.Context, userID primitive.ObjectID,
 ) ([]*models.RefreshToken, error) {
 	cursor, err := r.collection.Find(
@@ -76,7 +101,7 @@ func (r *RefreshTokenRepository) FindActiveTokensByUserID(
 	return tokens, nil
 }
 
-func (r *RefreshTokenRepository) RevokeToken(
+func (r *refreshTokenRepository) RevokeToken(
 	ctx context.Context, tokenId primitive.ObjectID,
 ) error {
 	now := time.Now()
@@ -91,7 +116,7 @@ func (r *RefreshTokenRepository) RevokeToken(
 	return err
 }
 
-func (r *RefreshTokenRepository) RevokeAllUserTokens(
+func (r *refreshTokenRepository) RevokeAllUserTokens(
 	ctx context.Context, userID primitive.ObjectID,
 ) (int64, error) {
 	now := time.Now()
@@ -106,7 +131,7 @@ func (r *RefreshTokenRepository) RevokeAllUserTokens(
 	return result.ModifiedCount, nil
 }
 
-func (r *RefreshTokenRepository) DeleteExpiredTokens(ctx context.Context) (
+func (r *refreshTokenRepository) DeleteExpiredTokens(ctx context.Context) (
 	int64, error,
 ) {
 	result, err := r.collection.DeleteMany(

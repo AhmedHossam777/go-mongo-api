@@ -10,6 +10,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/models"
+	"github.com/AhmedHossam777/go-mongo/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -29,11 +30,13 @@ type AuthService interface {
 }
 
 type authService struct {
-	userService            UserService
-	refreshTokenCollection *mongo.Collection
+	userService      UserService
+	refreshTokenRepo repository.RefreshTokenRepository
 }
 
-func NewAuthService(userService UserService) AuthService {
+func NewAuthService(
+	userService UserService, refreshTokenRepo repository.RefreshTokenRepository,
+) AuthService {
 	return &authService{userService: userService}
 }
 
@@ -171,7 +174,7 @@ func (s *authService) createTokenPair(user models.User, r *http.Request) (
 		IPAddress: getClientIP(r),
 	}
 
-	_, err = s.refreshTokenCollection.InsertOne(ctx, refreshTokenDoc)
+	err = s.refreshTokenRepo.Create(ctx, &refreshTokenDoc)
 	if err != nil {
 		return nil, err
 	}
