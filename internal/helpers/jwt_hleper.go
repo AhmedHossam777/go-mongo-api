@@ -31,9 +31,9 @@ func GenerateToken(
 	expirationMinutes := 15
 	mins := os.Getenv("ACCESS_TOKEN_EXPIRY_MINUTES")
 	if mins != "" {
-		h, err := strconv.Atoi(mins)
+		m, err := strconv.Atoi(mins)
 		if err == nil {
-			expirationMinutes = h
+			expirationMinutes = m
 		}
 	}
 

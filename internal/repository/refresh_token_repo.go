@@ -47,13 +47,6 @@ type RefreshTokenRepository interface {
 	)
 }
 
-func rewRefreshTokenRepository(db *mongo.Database) RefreshTokenRepository {
-	return &refreshTokenRepository{
-		collection: db.Collection("refresh_token"),
-		timeout:    10 * time.Second,
-	}
-}
-
 func (r *refreshTokenRepository) Create(
 	ctx context.Context, token *models.RefreshToken,
 ) error {
