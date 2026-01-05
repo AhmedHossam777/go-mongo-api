@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -79,8 +80,12 @@ func HashRefreshToken(token string) (string, error) {
 	return string(bytes), err
 }
 
-func VerifyRefreshToken(token, hash string) bool {
+func ValidateRefreshToken(token, hash string) bool {
+	token = strings.TrimSpace(token)
+	hash = strings.TrimSpace(hash)
+
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(token))
+
 	return err == nil
 }
 
@@ -88,6 +93,7 @@ func GetRefreshTokenExpiry() time.Time {
 	days := 7
 
 	d := os.Getenv("REFRESH_TOKEN_EXPIRY_DAYS")
+
 	if d != "" {
 		parsed, err := strconv.Atoi(d)
 		if err != nil {

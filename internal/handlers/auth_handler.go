@@ -95,3 +95,71 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(w, http.StatusOK, authResponse)
 }
+
+func (h *AuthHandler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var refreshTokenInput *dto.RefreshTokenInput
+	err := json.NewDecoder(r.Body).Decode(&refreshTokenInput)
+	if err != nil {
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while decoding request body: "+err.Error(),
+		)
+		return
+	}
+
+	validationErr := helpers.ValidateStruct(refreshTokenInput)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
+	tokenParis, err := h.authService.RefreshTokens(
+		ctx, refreshTokenInput.RefreshToken, r,
+	)
+
+	if err != nil {
+		RespondWithError(
+			w, http.StatusUnauthorized, "error while refresh tokens, "+err.Error(),
+		)
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, tokenParis)
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var refreshTokenInput *dto.RefreshTokenInput
+	err := json.NewDecoder(r.Body).Decode(&refreshTokenInput)
+	if err != nil {
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while decoding request body: "+err.Error(),
+		)
+		return
+	}
+
+	validationErr := helpers.ValidateStruct(refreshTokenInput)
+	if validationErr != nil {
+		RespondWithValidationErrors(w, validationErr)
+		return
+	}
+
+	err = h.authService.Logout(ctx, refreshTokenInput.RefreshToken)
+	if err != nil {
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while logging out: "+err.Error(),
+		)
+		return
+	}
+
+	RespondWithJSON(
+		w, http.StatusOK, map[string]string{"message": "Logged out successfully"},
+	)
+}

@@ -9,7 +9,7 @@ import (
 type RefreshToken struct {
 	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	UserId    primitive.ObjectID `json:"userId" bson:"user_id"`
-	Token     string             `json:"-" json:"token"`
+	Token     string             `json:"-" bson:"token"`
 	ExpiresAt time.Time          `json:"expiresAt" bson:"expires_at"`
 	CreatedAt time.Time          `json:"createdAt" bson:"created_at"`
 	Revoked   bool               `json:"revoked" bson:"revoked"`

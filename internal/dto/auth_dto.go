@@ -30,5 +30,5 @@ type UserResponse struct {
 }
 
 type RefreshTokenInput struct {
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"refreshToken" validate:"required"`
 }

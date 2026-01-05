@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -27,6 +28,10 @@ type AuthService interface {
 	Login(ctx context.Context, loginDto dto.LoginDto, r *http.Request) (
 		*dto.AuthResponse, error,
 	)
+	RefreshTokens(
+		ctx context.Context, refreshToken string, r *http.Request,
+	) (*dto.TokenPair, error)
+	Logout(ctx context.Context, refreshToken string) error
 }
 
 type authService struct {
@@ -118,6 +123,39 @@ func (s *authService) Login(
 	return authResponse, nil
 }
 
+func (s *authService) RefreshTokens(
+	ctx context.Context, refreshToken string, r *http.Request,
+) (*dto.TokenPair, error) {
+	if refreshToken == "" {
+		return nil, errors.New("refresh token is required")
+	}
+
+	matchedToken, err := s.findValidRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.refreshTokenRepo.RevokeToken(ctx, matchedToken.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.userService.GetOneUser(ctx, matchedToken.UserId.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return s.createTokenPair(user, r)
+}
+
+func (s *authService) Logout(ctx context.Context, refreshToken string) error {
+	matchedToken, err := s.findValidRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return err
+	}
+	return s.refreshTokenRepo.RevokeToken(ctx, matchedToken.ID)
+}
+
 func getClientIP(r *http.Request) string {
 	// Check X-Forwarded-For header (for proxies/load balancers)
 	forwarded := r.Header.Get("X-Forwarded-For")
@@ -174,6 +212,23 @@ func (s *authService) createTokenPair(user *models.User, r *http.Request) (
 
 	return &dto.TokenPair{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+		RefreshToken: plainRefreshToken,
 	}, nil
+}
+
+func (s *authService) findValidRefreshToken(
+	ctx context.Context, plainToken string,
+) (*models.RefreshToken, error) {
+	activeTokens, err := s.refreshTokenRepo.FindActiveTokens(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, token := range activeTokens {
+		if helpers.ValidateRefreshToken(plainToken, token.Token) {
+			return token, nil
+		}
+	}
+
+	return nil, errors.New("token not found")
 }
