@@ -32,8 +32,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"Error while decoding request body: "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while decoding request body: "+err.Error(),
+		)
 		return
 	}
 
@@ -43,15 +45,19 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authResponse, err := h.authService.Register(ctx, registerDto)
+	authResponse, err := h.authService.Register(ctx, registerDto, r)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			RespondWithError(w, http.StatusBadRequest,
-				"user already exist")
+			RespondWithError(
+				w, http.StatusBadRequest,
+				"user already exist",
+			)
 			return
 		}
-		RespondWithError(w, http.StatusBadRequest,
-			"Error while register, "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while register, "+err.Error(),
+		)
 		return
 	}
 
@@ -65,8 +71,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var loginDto dto.LoginDto
 	err := json.NewDecoder(r.Body).Decode(&loginDto)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"Error while decoding request body: "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while decoding request body: "+err.Error(),
+		)
 		return
 	}
 
@@ -76,10 +84,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authResponse, err := h.authService.Login(ctx, loginDto)
+	authResponse, err := h.authService.Login(ctx, loginDto, r)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"Error while login, "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while login, "+err.Error(),
+		)
 		return
 	}
 

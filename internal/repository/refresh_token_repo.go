@@ -15,6 +15,13 @@ type refreshTokenRepository struct {
 	timeout    time.Duration
 }
 
+func NewRefreshTokenRepo(db *mongo.Database) RefreshTokenRepository {
+	return &refreshTokenRepository{
+		collection: db.Collection("refresh_token"),
+		timeout:    10 * time.Second,
+	}
+}
+
 type RefreshTokenRepository interface {
 	Create(
 		ctx context.Context, token *models.RefreshToken,

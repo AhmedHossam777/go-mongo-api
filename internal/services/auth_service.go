@@ -21,10 +21,10 @@ var (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, registerDto dto.RegisterDto) (
+	Register(ctx context.Context, registerDto dto.RegisterDto, r *http.Request) (
 		*dto.AuthResponse, error,
 	)
-	Login(ctx context.Context, loginDto dto.LoginDto) (
+	Login(ctx context.Context, loginDto dto.LoginDto, r *http.Request) (
 		*dto.AuthResponse, error,
 	)
 }
@@ -37,11 +37,13 @@ type authService struct {
 func NewAuthService(
 	userService UserService, refreshTokenRepo repository.RefreshTokenRepository,
 ) AuthService {
-	return &authService{userService: userService}
+	return &authService{
+		userService: userService, refreshTokenRepo: refreshTokenRepo,
+	}
 }
 
 func (s *authService) Register(
-	ctx context.Context, registerDto dto.RegisterDto,
+	ctx context.Context, registerDto dto.RegisterDto, r *http.Request,
 ) (*dto.AuthResponse, error) {
 	user, _ := s.userService.GetUserByEmail(ctx, registerDto.Email)
 	if user != nil {
@@ -67,19 +69,13 @@ func (s *authService) Register(
 		return nil, err
 	}
 
-	s.createTokenPair(userModel, r)
-
-	token, err := helpers.GenerateToken(
-		createdUser.ID, createdUser.Email,
-		createdUser.Role,
-	)
-
+	tokenPairs, err := s.createTokenPair(createdUser, r)
 	if err != nil {
 		return nil, err
 	}
 
 	authResponse := &dto.AuthResponse{
-		Token: token,
+		Token: tokenPairs,
 		User: dto.UserResponse{
 			ID:    createdUser.ID,
 			Name:  createdUser.Name,
@@ -91,7 +87,7 @@ func (s *authService) Register(
 }
 
 func (s *authService) Login(
-	ctx context.Context, loginDto dto.LoginDto,
+	ctx context.Context, loginDto dto.LoginDto, r *http.Request,
 ) (*dto.AuthResponse, error) {
 
 	existedUser, err := s.userService.GetUserByEmail(ctx, loginDto.Email)
@@ -104,17 +100,14 @@ func (s *authService) Login(
 		return nil, ErrInvalidCredentials
 	}
 
-	token, err := helpers.GenerateToken(
-		existedUser.ID, existedUser.Email,
-		existedUser.Role,
-	)
+	tokenPair, err := s.createTokenPair(existedUser, r)
 
 	if err != nil {
 		return nil, err
 	}
 
 	authResponse := &dto.AuthResponse{
-		Token: token,
+		Token: tokenPair,
 		User: dto.UserResponse{
 			ID:    existedUser.ID,
 			Name:  existedUser.Name,
@@ -141,7 +134,7 @@ func getClientIP(r *http.Request) string {
 	return strings.Split(r.RemoteAddr, ":")[0]
 }
 
-func (s *authService) createTokenPair(user models.User, r *http.Request) (
+func (s *authService) createTokenPair(user *models.User, r *http.Request) (
 	*dto.TokenPair, error,
 ) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

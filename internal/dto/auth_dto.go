@@ -19,7 +19,7 @@ type LoginDto struct {
 }
 
 type AuthResponse struct {
-	Token TokenPair    `json:"tokens"`
+	Token *TokenPair   `json:"tokens"`
 	User  UserResponse `json:"user"`
 }
 
