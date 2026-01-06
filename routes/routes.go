@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
+	"github.com/AhmedHossam777/go-mongo/middlewares"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupRoutes(
 	userHandler *handlers.UserHandler, courseHandler *handlers.CourseHandler,
 	authHandler *handlers.AuthHandler,
-) *http.ServeMux {
+) http.Handler {
 
 	router := http.NewServeMux()
 
@@ -25,7 +26,8 @@ func SetupRoutes(
 	RegisterUserRoutes(router, userHandler)
 	RegisterAuthRouts(router, authHandler)
 
-	return router
+	// Wrap router with CORS middleware
+	return middlewares.CORSMiddleware(router)
 }
 
 // @Summary Server Home
