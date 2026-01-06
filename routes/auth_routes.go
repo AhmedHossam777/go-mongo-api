@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
+	"github.com/AhmedHossam777/go-mongo/middlewares"
 )
 
 func RegisterAuthRouts(
@@ -17,4 +18,9 @@ func RegisterAuthRouts(
 		"POST "+basePath+"/refresh-tokens", authHandler.RefreshTokens,
 	)
 	router.HandleFunc("POST "+basePath+"/logout", authHandler.Logout)
+
+	router.Handle(
+		"GET "+basePath+"/active-sessions",
+		middlewares.AuthMiddleware(http.HandlerFunc(authHandler.GetActiveSessions)),
+	)
 }

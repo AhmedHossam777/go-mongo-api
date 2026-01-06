@@ -32,6 +32,9 @@ type AuthService interface {
 		ctx context.Context, refreshToken string, r *http.Request,
 	) (*dto.TokenPair, error)
 	Logout(ctx context.Context, refreshToken string) error
+	GetActiveSessions(
+		ctx context.Context, userID primitive.ObjectID,
+	) ([]map[string]interface{}, error)
 }
 
 type authService struct {
@@ -154,6 +157,29 @@ func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 		return err
 	}
 	return s.refreshTokenRepo.RevokeToken(ctx, matchedToken.ID)
+}
+func (s *authService) GetActiveSessions(
+	ctx context.Context, userID primitive.ObjectID,
+) ([]map[string]interface{}, error) {
+	tokens, err := s.refreshTokenRepo.FindActiveTokensByUserID(ctx, userID)
+	if err != nil {
+		return nil, errors.New("error fetching sessions")
+	}
+
+	sessions := make([]map[string]interface{}, 0, len(tokens))
+	for _, token := range tokens {
+		sessions = append(
+			sessions, map[string]interface{}{
+				"id":        token.ID.Hex(),
+				"userAgent": token.UserAgent,
+				"ipAddress": token.IPAddress,
+				"createdAt": token.CreatedAt,
+				"expiresAt": token.ExpiresAt,
+			},
+		)
+	}
+
+	return sessions, nil
 }
 
 func getClientIP(r *http.Request) string {

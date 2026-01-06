@@ -9,6 +9,7 @@ import (
 	"github.com/AhmedHossam777/go-mongo/internal/dto"
 	"github.com/AhmedHossam777/go-mongo/internal/helpers"
 	"github.com/AhmedHossam777/go-mongo/internal/services"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -161,5 +162,43 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(
 		w, http.StatusOK, map[string]string{"message": "Logged out successfully"},
+	)
+}
+
+func (h *AuthHandler) GetActiveSessions(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userId, ok := r.Context().Value("userId").(string)
+	if !ok {
+		RespondWithError(
+			w, http.StatusUnauthorized,
+			"user id not found",
+		)
+		return
+	}
+
+	mongoUserId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		RespondWithError(
+			w, http.StatusInternalServerError, "invalid user id in the context",
+		)
+	}
+
+	sessions, err := h.authService.GetActiveSessions(ctx, mongoUserId)
+	if err != nil {
+		RespondWithError(
+			w, http.StatusInternalServerError, "error getting active session",
+		)
+		return
+	}
+
+	RespondWithJSON(
+		w, http.StatusOK, map[string]interface{}{
+			"activeSessions": sessions,
+			"count":          len(sessions),
+		},
 	)
 }
