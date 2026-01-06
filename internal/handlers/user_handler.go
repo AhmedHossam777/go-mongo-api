@@ -24,6 +24,15 @@ func NewUserHandler(userService services.UserService) *UserHandler {
 	return &UserHandler{service: userService}
 }
 
+// @Summary Get all users
+// @Description Get a paginated list of all users
+// @Tags users
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param page_size query int false "Page size (default: 10, max: 100)"
+// @Success 200 {object} map[string]interface{} "Paginated list of users"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users [get]
 func (h *UserHandler) GetAllUsers(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -40,13 +49,17 @@ func (h *UserHandler) GetAllUsers(
 		pageSize = 10 // Default to 10
 	}
 
-	users, totalCount, err := h.service.GetAllUsers(ctx, int64(page),
-		int64(pageSize))
+	users, totalCount, err := h.service.GetAllUsers(
+		ctx, int64(page),
+		int64(pageSize),
+	)
 
 	if err != nil {
 		log.Println(err)
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while fetching all user, "+err.Error())
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while fetching all user, "+err.Error(),
+		)
 		return
 	}
 
@@ -58,11 +71,22 @@ func (h *UserHandler) GetAllUsers(
 		count = pageSize - (page*pageSize - int(totalCount))
 	}
 
-	PaginationResponse(w, http.StatusOK, users, page, count,
+	PaginationResponse(
+		w, http.StatusOK, users, page, count,
 		totalCount,
-		hasMore)
+		hasMore,
+	)
 }
 
+// @Summary Get current user
+// @Description Get the currently authenticated user's profile
+// @Tags users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} github_com_AhmedHossam777_go-mongo_internal_models.User "User profile"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/me [get]
 func (h *UserHandler) GetMe(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -73,14 +97,26 @@ func (h *UserHandler) GetMe(
 	fmt.Println("userId: ", userId)
 	user, err := h.service.GetOneUser(ctx, userId)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while getting one user")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while getting one user",
+		)
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, user)
 }
 
+// @Summary Create a new user
+// @Description Create a new user with name, email, password and optional role
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateUserDto true "User details"
+// @Success 201 {object} github_com_AhmedHossam777_go-mongo_internal_models.UserResponse "User created successfully"
+// @Failure 400 {object} map[string]string "Bad request - validation error or user already exists"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -89,15 +125,19 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&createUserDto)
 	defer r.Body.Close()
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"Error while decoding request body: "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Error while decoding request body: "+err.Error(),
+		)
 		return
 	}
 
 	hashedPassword, err := helpers.HashPassword(createUserDto.Password)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error while hashing the password")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error while hashing the password",
+		)
 		return
 	}
 
@@ -123,19 +163,33 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	createdUser, err := h.service.CreateUser(ctx, user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			RespondWithError(w, http.StatusBadRequest,
-				"user already exist")
+			RespondWithError(
+				w, http.StatusBadRequest,
+				"user already exist",
+			)
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error while creating new user: "+err.Error())
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error while creating new user: "+err.Error(),
+		)
 		return
 	}
 
-	RespondWithJSON(w, http.StatusCreated,
-		createdUser.ToResponse())
+	RespondWithJSON(
+		w, http.StatusCreated,
+		createdUser.ToResponse(),
+	)
 }
 
+// @Summary Get user by ID
+// @Description Get a specific user by their ID
+// @Tags users
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} github_com_AhmedHossam777_go-mongo_internal_models.User "User details"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/{id} [get]
 func (h *UserHandler) GetOneUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -143,14 +197,27 @@ func (h *UserHandler) GetOneUser(w http.ResponseWriter, r *http.Request) {
 	userId := r.PathValue("id")
 	user, err := h.service.GetOneUser(ctx, userId)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while getting one user")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while getting one user",
+		)
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, user)
 }
 
+// @Summary Update user
+// @Description Update user details by ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body dto.UpdateUserDto true "Updated user details"
+// @Success 200 {object} github_com_AhmedHossam777_go-mongo_internal_models.User "User updated successfully"
+// @Failure 400 {object} map[string]string "Bad request - validation error"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/{id} [patch]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -159,8 +226,10 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&updateUserDto)
 	if err != nil {
 		log.Println(err)
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error while decoding request body")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error while decoding request body",
+		)
 		return
 	}
 
@@ -173,14 +242,27 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	userId := r.PathValue("id")
 	updatedUser, err := h.service.UpdateUser(ctx, userId, &updateUserDto)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while updating one user")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while updating one user",
+		)
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, updatedUser)
 }
 
+// @Summary Delete user
+// @Description Delete a user by ID (Admin only)
+// @Tags users
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 "User deleted successfully"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden - Admin access required"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -189,14 +271,26 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.DeleteUser(ctx, userId)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while deleting one user, "+err.Error())
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while deleting one user, "+err.Error(),
+		)
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, nil)
 }
 
+// @Summary Drop user collection
+// @Description Delete all users from the database (Admin only)
+// @Tags users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 "All users deleted successfully"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden - Admin access required"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /users/drop [delete]
 func (h *UserHandler) DropUserCollection(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -205,8 +299,10 @@ func (h *UserHandler) DropUserCollection(
 
 	err := h.service.DropUserCollection(ctx)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while deleting all users, "+err.Error())
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while deleting all users, "+err.Error(),
+		)
 		return
 	}
 

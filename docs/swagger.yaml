@@ -1,0 +1,798 @@
+basePath: /api/v1
+definitions:
+  github_com_AhmedHossam777_go-mongo_internal_dto.AuthResponse:
+    properties:
+      tokens:
+        $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.TokenPair'
+      user:
+        $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.UserResponse'
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.CreateCourseDto:
+    properties:
+      course_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      instructor_id:
+        type: string
+      price:
+        type: integer
+    required:
+    - course_name
+    - instructor_id
+    - price
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.CreateUserDto:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.RefreshTokenInput:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.RegisterDto:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.TokenPair:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.UpdateCourseDto:
+    properties:
+      course_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      price:
+        minimum: 0
+        type: integer
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.UpdateUserDto:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_models.Course:
+    properties:
+      course_name:
+        type: string
+      id:
+        description: If ID is empty, don't include it in JSON/BSON
+        type: string
+      instructor_id:
+        type: string
+      price:
+        type: integer
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_models.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_models.UserResponse:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: A RESTful API for managing courses, users, and authentication built
+    with Go and MongoDB
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go-MongoDB Course API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Get welcome message and API information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Welcome message with API information
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Server Home
+      tags:
+      - general
+  /auth/active-sessions:
+    get:
+      description: Get all active sessions for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of active sessions
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get active sessions
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User logged in successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.AuthResponse'
+        "400":
+          description: Bad request - invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user and invalidate refresh token
+      parameters:
+      - description: Refresh token to invalidate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.RefreshTokenInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout user
+      tags:
+      - auth
+  /auth/refresh-tokens:
+    post:
+      consumes:
+      - application/json
+      description: Get new access and refresh tokens using refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.RefreshTokenInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New token pair generated
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.TokenPair'
+        "401":
+          description: Unauthorized - invalid refresh token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with name, email and password
+      parameters:
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.RegisterDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.AuthResponse'
+        "400":
+          description: Bad request - validation error or user already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /courses:
+    get:
+      description: Get a paginated list of all courses
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 10, max: 100)'
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of courses
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all courses
+      tags:
+      - courses
+    post:
+      consumes:
+      - application/json
+      description: Create a new course (requires authentication)
+      parameters:
+      - description: Course details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.CreateCourseDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Course created successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Course'
+        "400":
+          description: Bad request - validation error or duplicate course
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new course
+      tags:
+      - courses
+  /courses/{id}:
+    delete:
+      description: Delete a course by ID (requires authentication)
+      parameters:
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Course deleted successfully
+        "400":
+          description: Bad request - invalid course ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Course not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete course
+      tags:
+      - courses
+    get:
+      description: Get a specific course by its ID
+      parameters:
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Course details
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Course'
+        "400":
+          description: Bad request - invalid course ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Course not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get course by ID
+      tags:
+      - courses
+    patch:
+      consumes:
+      - application/json
+      description: Update course details by ID (requires authentication)
+      parameters:
+      - description: Course ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated course details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.UpdateCourseDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Course updated successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Course'
+        "400":
+          description: Bad request - validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update course
+      tags:
+      - courses
+  /courses/drop:
+    delete:
+      description: Delete all courses from the database (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All courses deleted successfully
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - Admin access required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Drop course collection
+      tags:
+      - courses
+  /health:
+    get:
+      description: Check if the API is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API health status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - general
+  /users:
+    get:
+      description: Get a paginated list of all users
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 10, max: 100)'
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of users
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with name, email, password and optional role
+      parameters:
+      - description: User details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.CreateUserDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.UserResponse'
+        "400":
+          description: Bad request - validation error or user already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Delete a user by ID (Admin only)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - Admin access required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - users
+    get:
+      description: Get a specific user by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.User'
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get user by ID
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Update user details by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated user details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.UpdateUserDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.User'
+        "400":
+          description: Bad request - validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update user
+      tags:
+      - users
+  /users/drop:
+    delete:
+      description: Delete all users from the database (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All users deleted successfully
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden - Admin access required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Drop user collection
+      tags:
+      - users
+  /users/me:
+    get:
+      description: Get the currently authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - users
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

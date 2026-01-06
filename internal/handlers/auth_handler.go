@@ -23,6 +23,15 @@ func NewAuthHandler(
 	return &AuthHandler{authService: authService}
 }
 
+// @Summary Register a new user
+// @Description Register a new user with name, email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RegisterDto true "User registration details"
+// @Success 201 {object} dto.AuthResponse "User registered successfully"
+// @Failure 400 {object} map[string]string "Bad request - validation error or user already exists"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -65,6 +74,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusCreated, authResponse)
 }
 
+// @Summary Login user
+// @Description Authenticate user with email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginDto true "User login credentials"
+// @Success 200 {object} dto.AuthResponse "User logged in successfully"
+// @Failure 400 {object} map[string]string "Bad request - invalid credentials"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -97,6 +115,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, authResponse)
 }
 
+// @Summary Refresh access token
+// @Description Get new access and refresh tokens using refresh token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshTokenInput true "Refresh token"
+// @Success 200 {object} dto.TokenPair "New token pair generated"
+// @Failure 401 {object} map[string]string "Unauthorized - invalid refresh token"
+// @Router /auth/refresh-tokens [post]
 func (h *AuthHandler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -131,6 +158,15 @@ func (h *AuthHandler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, tokenParis)
 }
 
+// @Summary Logout user
+// @Description Logout user and invalidate refresh token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshTokenInput true "Refresh token to invalidate"
+// @Success 200 {object} map[string]string "Logged out successfully"
+// @Failure 400 {object} map[string]string "Bad request"
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -165,6 +201,15 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+// @Summary Get active sessions
+// @Description Get all active sessions for the authenticated user
+// @Tags auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{} "List of active sessions"
+// @Failure 401 {object} map[string]string "Unauthorized - invalid or missing token"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /auth/active-sessions [get]
 func (h *AuthHandler) GetActiveSessions(
 	w http.ResponseWriter, r *http.Request,
 ) {

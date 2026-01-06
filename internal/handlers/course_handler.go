@@ -25,29 +25,47 @@ func NewCourseHandler(service services.CourseService) *CourseHandler {
 	}
 }
 
+// @Summary Create a new course
+// @Description Create a new course (requires authentication)
+// @Tags courses
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateCourseDto true "Course details"
+// @Success 201 {object} github_com_AhmedHossam777_go-mongo_internal_models.Course "Course created successfully"
+// @Failure 400 {object} map[string]string "Bad request - validation error or duplicate course"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses [post]
 func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	userId, ok := r.Context().Value("userId").(string)
 	if !ok {
-		RespondWithError(w, http.StatusUnauthorized,
-			"user id not found")
+		RespondWithError(
+			w, http.StatusUnauthorized,
+			"user id not found",
+		)
 		return
 	}
 	var courseDto dto.CreateCourseDto
 	err := json.NewDecoder(r.Body).Decode(&courseDto)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"Invalid request body, "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"Invalid request body, "+err.Error(),
+		)
 		return
 	}
 	defer r.Body.Close()
 
 	mongoUserId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"error while casting userId "+err.Error())
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"error while casting userId "+err.Error(),
+		)
 		return
 	}
 
@@ -63,8 +81,10 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			RespondWithError(w, http.StatusBadRequest,
-				"duplicated course name")
+			RespondWithError(
+				w, http.StatusBadRequest,
+				"duplicated course name",
+			)
 			return
 		}
 		RespondWithError(w, http.StatusInternalServerError, "Error creating course")
@@ -74,6 +94,15 @@ func (h *CourseHandler) CreateCourse(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusCreated, createdCourse)
 }
 
+// @Summary Get all courses
+// @Description Get a paginated list of all courses
+// @Tags courses
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param page_size query int false "Page size (default: 10, max: 100)"
+// @Success 200 {object} map[string]interface{} "Paginated list of courses"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses [get]
 func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -88,12 +117,16 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 		pageSize = 10 // Default to 10
 	}
 
-	courses, totalCount, err := h.service.GetAllCourses(ctx, int64(page),
-		int64(pageSize))
+	courses, totalCount, err := h.service.GetAllCourses(
+		ctx, int64(page),
+		int64(pageSize),
+	)
 
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error fetching courses")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error fetching courses",
+		)
 		return
 	}
 
@@ -105,10 +138,22 @@ func (h *CourseHandler) GetAllCourses(w http.ResponseWriter, r *http.Request) {
 		count = pageSize - (page*pageSize - totalCount)
 	}
 
-	PaginationResponse(w, http.StatusOK, courses, page, count, int64(totalCount),
-		hasMore)
+	PaginationResponse(
+		w, http.StatusOK, courses, page, count, int64(totalCount),
+		hasMore,
+	)
 }
 
+// @Summary Get course by ID
+// @Description Get a specific course by its ID
+// @Tags courses
+// @Produce json
+// @Param id path string true "Course ID"
+// @Success 200 {object} github_com_AhmedHossam777_go-mongo_internal_models.Course "Course details"
+// @Failure 400 {object} map[string]string "Bad request - invalid course ID"
+// @Failure 404 {object} map[string]string "Course not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses/{id} [get]
 func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -128,8 +173,10 @@ func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error while fetching the course")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error while fetching the course",
+		)
 
 		return
 	}
@@ -137,6 +184,19 @@ func (h *CourseHandler) GetOneCourse(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, course)
 }
 
+// @Summary Update course
+// @Description Update course details by ID (requires authentication)
+// @Tags courses
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Course ID"
+// @Param request body dto.UpdateCourseDto true "Updated course details"
+// @Success 200 {object} github_com_AhmedHossam777_go-mongo_internal_models.Course "Course updated successfully"
+// @Failure 400 {object} map[string]string "Bad request - validation error"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses/{id} [patch]
 func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -146,8 +206,10 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 	var updatedCourseDto dto.UpdateCourseDto
 	err := json.NewDecoder(r.Body).Decode(&updatedCourseDto)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest,
-			"invalid request body "+err.Error())
+		RespondWithError(
+			w, http.StatusBadRequest,
+			"invalid request body "+err.Error(),
+		)
 		return
 	}
 	defer r.Body.Close()
@@ -165,6 +227,18 @@ func (h *CourseHandler) UpdateCourse(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// @Summary Delete course
+// @Description Delete a course by ID (requires authentication)
+// @Tags courses
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Course ID"
+// @Success 200 "Course deleted successfully"
+// @Failure 400 {object} map[string]string "Bad request - invalid course ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "Course not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses/{id} [delete]
 func (h *CourseHandler) DeleteOneCourse(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -191,6 +265,16 @@ func (h *CourseHandler) DeleteOneCourse(
 	RespondWithJSON(w, http.StatusOK, nil)
 }
 
+// @Summary Drop course collection
+// @Description Delete all courses from the database (Admin only)
+// @Tags courses
+// @Security BearerAuth
+// @Produce json
+// @Success 200 "All courses deleted successfully"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden - Admin access required"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /courses/drop [delete]
 func (h *CourseHandler) Drop(
 	w http.ResponseWriter, r *http.Request,
 ) {
@@ -199,8 +283,10 @@ func (h *CourseHandler) Drop(
 
 	err := h.service.Drop(ctx)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError,
-			"Error deleting all courses")
+		RespondWithError(
+			w, http.StatusInternalServerError,
+			"Error deleting all courses",
+		)
 		return
 	}
 	RespondWithJSON(w, http.StatusOK, nil)
