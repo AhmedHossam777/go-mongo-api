@@ -29,7 +29,8 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	userHandler := handlers.NewUserHandler(userService)
 
-	authService := services.NewAuthService(userService)
+	refreshTokenRepo := repository.NewRefreshTokenRepo(db)
+	authService := services.NewAuthService(userService, refreshTokenRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 
 	port := cnfg.Port
