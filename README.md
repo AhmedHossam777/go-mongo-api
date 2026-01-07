@@ -8,6 +8,7 @@ A RESTful API for managing courses, users, and authentication built with Go and 
 - **Authentication**: JWT-based authentication with Access and Refresh tokens.
 - **Role-Based Access Control**: Different permissions for `admin` and `user` roles.
 - **Course Management**: CRUD operations for courses (Create, Read, Update, Delete).
+- **Rate Limiting**: Protects the API from abuse by limiting request frequency.
 - **Swagger Documentation**: Interactive API documentation.
 - **Docker Support**: Easy deployment using Docker and Docker Compose.
 - **Input Validation**: Robust request validation using `go-playground/validator`.

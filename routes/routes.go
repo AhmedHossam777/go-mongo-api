@@ -26,8 +26,8 @@ func SetupRoutes(
 	RegisterUserRoutes(router, userHandler)
 	RegisterAuthRouts(router, authHandler)
 
-	// Wrap router with CORS middleware
-	return middlewares.CORSMiddleware(router)
+	// Wrap router with CORS and Rate Limit middleware
+	return middlewares.RateLimitMiddleware(middlewares.CORSMiddleware(router))
 }
 
 // @Summary Server Home
