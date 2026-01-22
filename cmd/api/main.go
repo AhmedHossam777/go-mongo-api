@@ -54,12 +54,18 @@ func main() {
 	authService := services.NewAuthService(userService, refreshTokenRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 
+	productRepo := repository.NewProductRepo(db)
+	productService := services.NewProductService(productRepo)
+	productHandler := handlers.NewProductHandler(productService)
+
 	port := cnfg.Port
 	if port == "" {
 		port = "8080"
 	}
 
-	router := routes.SetupRoutes(userHandler, courseHandler, authHandler)
+	router := routes.SetupRoutes(
+		userHandler, courseHandler, authHandler, productHandler,
+	)
 
 	fmt.Println("╔════════════════════════════════════════════════════╗")
 	fmt.Println("║       Go-MongoDB Course API Server                ║")
@@ -67,6 +73,7 @@ func main() {
 	fmt.Printf("🚀 Server starting on port %s\n", port)
 	fmt.Printf("📚 API v1 Base URL: http://localhost:%s/api/v1\n", port)
 	fmt.Printf("📖 Courses API: http://localhost:%s/api/v1/courses\n", port)
+	fmt.Printf("📦 Products API: http://localhost:%s/api/v1/products\n", port)
 	fmt.Printf("👥 Users API: http://localhost:%s/api/v1/users\n", port)
 	fmt.Printf("🔐 Auth API: http://localhost:%s/api/v1/auth\n", port)
 	fmt.Printf("📝 Swagger Docs: http://localhost:%s/swagger/index.html\n", port)
