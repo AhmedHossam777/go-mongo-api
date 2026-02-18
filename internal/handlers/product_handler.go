@@ -258,7 +258,7 @@ func (h *ProductHandler) DeleteOneProduct(
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, nil)
+	RespondWithJSON(w, http.StatusNoContent, nil)
 }
 
 // @Summary Drop product collection

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/AhmedHossam777/go-mongo/internal/handlers"
-	"github.com/AhmedHossam777/go-mongo/middlewares"
 )
 
 func RegisterProductRoutes(
@@ -16,6 +15,7 @@ func RegisterProductRoutes(
 	router.HandleFunc("POST "+basePath, productHandler.CreateProduct)
 	router.HandleFunc("PATCH "+basePath+"/{id}", productHandler.UpdateProduct)
 	router.HandleFunc("DELETE "+basePath+"/{id}", productHandler.DeleteOneProduct)
+	router.HandleFunc("DELETE "+basePath, productHandler.Drop)
 
 	// protected := []struct {
 	// 	method  string
@@ -46,10 +46,10 @@ func RegisterProductRoutes(
 	// 	)
 	// }
 
-	// ? admin only routes
-	router.Handle(
-		"DELETE "+basePath+"/drop", middlewares.AuthMiddleware(
-			middlewares.RoleMiddleware("admin")(http.HandlerFunc(productHandler.Drop)),
-		),
-	)
+	// // ? admin only routes
+	// router.Handle(
+	// 	"DELETE "+basePath+"/drop", middlewares.AuthMiddleware(
+	// 		middlewares.RoleMiddleware("admin")(http.HandlerFunc(productHandler.Drop)),
+	// 	),
+	// )
 }

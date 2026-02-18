@@ -43,12 +43,34 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 func (s *productService) CreateProduct(
 	ctx context.Context, productDto *dto.CreateProduct,
 ) (*models.Product, error) {
+	now := primitive.NewDateTimeFromTime(primitive.DateTime(0).Time())
+
+	isActive := true
+	if productDto.IsActive != nil {
+		isActive = *productDto.IsActive
+	}
 
 	product := &models.Product{
 		Title:       productDto.Title,
 		Price:       productDto.Price,
 		Description: productDto.Description,
+		Category:    productDto.Category,
+		Brand:       productDto.Brand,
+		Stock:       productDto.Stock,
+		Images:      productDto.Images,
+		Tags:        productDto.Tags,
+		IsActive:    isActive,
+		CreatedAt:   now.Time(),
+		UpdatedAt:   now.Time(),
 	}
+
+	if product.Images == nil {
+		product.Images = []string{}
+	}
+	if product.Tags == nil {
+		product.Tags = []string{}
+	}
+
 	return s.repo.Create(ctx, product)
 }
 
@@ -98,6 +120,29 @@ func (s *productService) UpdateProduct(
 	if updateProductDto.Description != "" {
 		update["description"] = updateProductDto.Description
 	}
+	if updateProductDto.Category != "" {
+		update["category"] = updateProductDto.Category
+	}
+	if updateProductDto.Brand != "" {
+		update["brand"] = updateProductDto.Brand
+	}
+
+	if updateProductDto.Stock != nil {
+		update["stock"] = *updateProductDto.Stock
+	}
+	if updateProductDto.Images != nil {
+		update["images"] = updateProductDto.Images
+	}
+	if updateProductDto.Tags != nil {
+		update["tags"] = updateProductDto.Tags
+	}
+	if updateProductDto.IsActive != nil {
+		update["is_active"] = *updateProductDto.IsActive
+	}
+
+	// Always update the timestamp
+	now := primitive.NewDateTimeFromTime(primitive.DateTime(0).Time())
+	update["updated_at"] = now.Time()
 
 	updateProduct, err := s.repo.UpdateOne(ctx, objectId, bson.M{"$set": update})
 	if errors.Is(err, mongo.ErrNoDocuments) {
