@@ -11,7 +11,7 @@ import (
 
 func SetupRoutes(
 	userHandler *handlers.UserHandler, courseHandler *handlers.CourseHandler,
-	authHandler *handlers.AuthHandler,
+	authHandler *handlers.AuthHandler, productHandler *handlers.ProductHandler,
 ) http.Handler {
 
 	router := http.NewServeMux()
@@ -25,6 +25,7 @@ func SetupRoutes(
 	RegisterCourseRoutes(router, courseHandler)
 	RegisterUserRoutes(router, userHandler)
 	RegisterAuthRouts(router, authHandler)
+	RegisterProductRoutes(router, productHandler)
 
 	// Wrap router with CORS and Rate Limit middleware
 	return middlewares.RateLimitMiddleware(middlewares.CORSMiddleware(router))
