@@ -1,5 +1,43 @@
 basePath: /api/v1
 definitions:
+  github_com_AhmedHossam777_go-mongo_internal_dto.CreateBlogDto:
+    properties:
+      content:
+        minLength: 10
+        type: string
+      title:
+        maxLength: 200
+        minLength: 2
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_dto.UpdateBlogDto:
+    properties:
+      content:
+        minLength: 10
+        type: string
+      title:
+        maxLength: 200
+        minLength: 2
+        type: string
+    type: object
+  github_com_AhmedHossam777_go-mongo_internal_models.Blog:
+    properties:
+      author_id:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
   github_com_AhmedHossam777_go-mongo_internal_dto.AuthResponse:
     properties:
       tokens:
@@ -326,6 +364,207 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /blogs:
+    get:
+      description: Get a paginated list of all blog posts
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Page size (default: 10, max: 100)'
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paginated list of blogs
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all blogs
+      tags:
+      - blogs
+    post:
+      consumes:
+      - application/json
+      description: Create a new blog post (requires authentication)
+      parameters:
+      - description: Blog details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.CreateBlogDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Blog created successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Blog'
+        "400":
+          description: Bad request - validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new blog
+      tags:
+      - blogs
+  /blogs/{id}:
+    delete:
+      description: Delete a blog post by ID (requires authentication)
+      parameters:
+      - description: Blog ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Blog deleted successfully
+        "400":
+          description: Bad request - invalid blog ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Blog not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete blog
+      tags:
+      - blogs
+    get:
+      description: Get a specific blog post by its ID
+      parameters:
+      - description: Blog ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Blog details
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Blog'
+        "400":
+          description: Bad request - invalid blog ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Blog not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get blog by ID
+      tags:
+      - blogs
+    patch:
+      consumes:
+      - application/json
+      description: Update blog post details by ID (requires authentication)
+      parameters:
+      - description: Blog ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated blog details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_dto.UpdateBlogDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Blog updated successfully
+          schema:
+            $ref: '#/definitions/github_com_AhmedHossam777_go-mongo_internal_models.Blog'
+        "400":
+          description: Bad request - validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Blog not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update blog
+      tags:
+      - blogs
   /courses:
     get:
       description: Get a paginated list of all courses
@@ -791,7 +1030,7 @@ schemes:
 - https
 securityDefinitions:
   BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
+    description: 'Enter the token with the `Bearer ` prefix, e.g. "Bearer eyJhbGci..."'
     in: header
     name: Authorization
     type: apiKey
