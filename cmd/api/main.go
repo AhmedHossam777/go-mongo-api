@@ -58,13 +58,17 @@ func main() {
 	productService := services.NewProductService(productRepo)
 	productHandler := handlers.NewProductHandler(productService)
 
+	blogRepo := repository.NewBlogRepo(db)
+	blogService := services.NewBlogService(blogRepo)
+	blogHandler := handlers.NewBlogHandler(blogService)
+
 	port := cnfg.Port
 	if port == "" {
 		port = "8080"
 	}
 
 	router := routes.SetupRoutes(
-		userHandler, courseHandler, authHandler, productHandler,
+		userHandler, courseHandler, authHandler, productHandler, blogHandler,
 	)
 
 	fmt.Println("╔════════════════════════════════════════════════════╗")
@@ -74,6 +78,7 @@ func main() {
 	fmt.Printf("📚 API v1 Base URL: http://localhost:%s/api/v1\n", port)
 	fmt.Printf("📖 Courses API: http://localhost:%s/api/v1/courses\n", port)
 	fmt.Printf("📦 Products API: http://localhost:%s/api/v1/products\n", port)
+	fmt.Printf("📝 Blogs API: http://localhost:%s/api/v1/blogs\n", port)
 	fmt.Printf("👥 Users API: http://localhost:%s/api/v1/users\n", port)
 	fmt.Printf("🔐 Auth API: http://localhost:%s/api/v1/auth\n", port)
 	fmt.Printf("📝 Swagger Docs: http://localhost:%s/swagger/index.html\n", port)
