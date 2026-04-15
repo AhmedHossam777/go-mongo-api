@@ -59,8 +59,13 @@ func main() {
 	productHandler := handlers.NewProductHandler(productService)
 
 	blogRepo := repository.NewBlogRepo(db)
-	blogService := services.NewBlogService(blogRepo)
-	blogHandler := handlers.NewBlogHandler(blogService)
+	commentRepo := repository.NewCommentRepo(db)
+	blogService := services.NewBlogService(blogRepo, commentRepo)
+	s3Service, err := services.NewS3Service()
+	if err != nil {
+		log.Fatal("Failed to initialize S3 service:", err)
+	}
+	blogHandler := handlers.NewBlogHandler(blogService, s3Service)
 
 	port := cnfg.Port
 	if port == "" {

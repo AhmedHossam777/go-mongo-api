@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/AhmedHossam777/go-mongo/internal/models"
@@ -14,10 +15,11 @@ import (
 
 type BlogRepository interface {
 	Create(ctx context.Context, blog *models.Blog) (*models.Blog, error)
-	FindAll(ctx context.Context, page int64, pageSize int64) ([]models.Blog, int, error)
-	FindOne(ctx context.Context, blogId primitive.ObjectID) (*models.Blog, error)
-	UpdateOne(ctx context.Context, blogId primitive.ObjectID, update bson.M) (*models.Blog, error)
+	FindAll(ctx context.Context, page int64, pageSize int64) ([]models.BlogWithAuthor, int, error)
+	FindOne(ctx context.Context, blogId primitive.ObjectID) (*models.BlogWithAuthor, error)
+	UpdateOne(ctx context.Context, blogId primitive.ObjectID, update bson.M) (*models.BlogWithAuthor, error)
 	DeleteOne(ctx context.Context, blogId primitive.ObjectID) error
+	GetBlogsByAuthor(ctx context.Context, authorId primitive.ObjectID, page int64, pageSize int64) ([]models.BlogWithAuthor, int, error)
 }
 
 type blogRepository struct {
@@ -30,6 +32,26 @@ func NewBlogRepo(db *mongo.Database) BlogRepository {
 		collection: db.Collection("blogs"),
 		timeout:    10 * time.Second,
 	}
+}
+
+var blogAuthorLookup = mongo.Pipeline{
+	{{Key: "$lookup", Value: bson.M{
+		"from":         "users",
+		"localField":   "author_id",
+		"foreignField": "_id",
+		"as":           "authorArr",
+	}}},
+	{{Key: "$unwind", Value: bson.M{"path": "$authorArr", "preserveNullAndEmptyArrays": true}}},
+	{{Key: "$addFields", Value: bson.M{
+		"author": bson.M{
+			"id":        "$authorArr._id",
+			"name":      "$authorArr.name",
+			"email":     "$authorArr.email",
+			"role":      "$authorArr.role",
+			"createdAt": "$authorArr.created_at",
+		},
+	}}},
+	{{Key: "$project", Value: bson.M{"authorArr": 0, "author_id": 0}}},
 }
 
 func (r *blogRepository) Create(ctx context.Context, blog *models.Blog) (*models.Blog, error) {
@@ -48,32 +70,34 @@ func (r *blogRepository) Create(ctx context.Context, blog *models.Blog) (*models
 	return blog, nil
 }
 
-func (r *blogRepository) FindAll(ctx context.Context, page int64, pageSize int64) ([]models.Blog, int, error) {
+func (r *blogRepository) FindAll(ctx context.Context, page int64, pageSize int64) ([]models.BlogWithAuthor, int, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
 	skip := (page - 1) * pageSize
 
-	findOptions := options.Find().
-		SetSort(bson.D{{Key: "created_at", Value: -1}}).
-		SetSkip(skip).
-		SetLimit(pageSize)
+	pipeline := mongo.Pipeline{
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$skip", Value: skip}},
+		{{Key: "$limit", Value: pageSize}},
+	}
+	pipeline = append(pipeline, blogAuthorLookup...)
 
-	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
-	var blogs []models.Blog
-	err = cursor.All(ctx, &blogs)
-	if err != nil {
+	var blogs []models.BlogWithAuthor
+	if err = cursor.All(ctx, &blogs); err != nil {
 		return nil, 0, err
 	}
 
 	if blogs == nil {
-		blogs = []models.Blog{}
+		blogs = []models.BlogWithAuthor{}
 	}
+	fmt.Println("Blogs found:", blogs)
 
 	totalCount, err := r.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
@@ -83,20 +107,35 @@ func (r *blogRepository) FindAll(ctx context.Context, page int64, pageSize int64
 	return blogs, int(totalCount), nil
 }
 
-func (r *blogRepository) FindOne(ctx context.Context, id primitive.ObjectID) (*models.Blog, error) {
+func (r *blogRepository) FindOne(ctx context.Context, id primitive.ObjectID) (*models.BlogWithAuthor, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	var blog models.Blog
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&blog)
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"_id": id}}},
+	}
+	pipeline = append(pipeline, blogAuthorLookup...)
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 
-	return &blog, nil
+	var results []models.BlogWithAuthor
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+	fmt.Printf("Blog found: %+v\n", results[0])
+
+	return &results[0], nil
 }
 
-func (r *blogRepository) UpdateOne(ctx context.Context, id primitive.ObjectID, update bson.M) (*models.Blog, error) {
+func (r *blogRepository) UpdateOne(ctx context.Context, id primitive.ObjectID, update bson.M) (*models.BlogWithAuthor, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
@@ -112,7 +151,7 @@ func (r *blogRepository) UpdateOne(ctx context.Context, id primitive.ObjectID, u
 		return nil, err
 	}
 
-	return &updatedBlog, nil
+	return r.FindOne(ctx, id)
 }
 
 func (r *blogRepository) DeleteOne(ctx context.Context, id primitive.ObjectID) error {
@@ -129,4 +168,42 @@ func (r *blogRepository) DeleteOne(ctx context.Context, id primitive.ObjectID) e
 	}
 
 	return nil
+}
+
+func (r *blogRepository) GetBlogsByAuthor(ctx context.Context, authorId primitive.ObjectID, page int64, pageSize int64) ([]models.BlogWithAuthor, int, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
+	skip := (page - 1) * pageSize
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"author_id": authorId}}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: -1}}}},
+		{{Key: "$skip", Value: skip}},
+		{{Key: "$limit", Value: pageSize}},
+	}
+	pipeline = append(pipeline, blogAuthorLookup...)
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var blogs []models.BlogWithAuthor
+	if err = cursor.All(ctx, &blogs); err != nil {
+		return nil, 0, err
+	}
+
+	if blogs == nil {
+		blogs = []models.BlogWithAuthor{}
+	}
+	fmt.Printf("Blogs found for author %s: %+v\n", authorId.Hex(), blogs)
+
+	totalCount, err := r.collection.CountDocuments(ctx, bson.M{"author_id": authorId})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return blogs, int(totalCount), nil
 }

@@ -17,11 +17,11 @@ type User struct {
 }
 
 type UserResponse struct {
-	ID        primitive.ObjectID `json:"id"`
-	Name      string             `json:"name"`
-	Email     string             `json:"email"`
-	Role      string             `json:"role"`
-	CreatedAt time.Time          `json:"createdAt"`
+	ID        primitive.ObjectID `json:"id" bson:"id"`
+	Name      string             `json:"name" bson:"name"`
+	Email     string             `json:"email" bson:"email"`
+	Role      string             `json:"role" bson:"role"`
+	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"`
 }
 
 type SignUpInput struct {

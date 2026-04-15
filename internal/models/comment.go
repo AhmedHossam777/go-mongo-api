@@ -6,22 +6,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Blog struct {
+type Comment struct {
 	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Title     string             `json:"title" bson:"title"`
 	Content   string             `json:"content" bson:"content"`
-	ImageURL  string             `json:"image_url,omitempty" bson:"image_url,omitempty"`
 	AuthorId  primitive.ObjectID `json:"author_id" bson:"author_id"`
+	BlogId    primitive.ObjectID `json:"blog_id" bson:"blog_id"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
-type BlogWithAuthor struct {
+type CommentWithAuthor struct {
 	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Title     string             `json:"title" bson:"title"`
 	Content   string             `json:"content" bson:"content"`
-	ImageURL  string             `json:"image_url,omitempty" bson:"image_url,omitempty"`
 	Author    UserResponse       `json:"author" bson:"author"`
+	BlogId    primitive.ObjectID `json:"blog_id" bson:"blog_id"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }

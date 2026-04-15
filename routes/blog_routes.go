@@ -12,6 +12,7 @@ func RegisterBlogRoutes(router *http.ServeMux, blogHandler *handlers.BlogHandler
 
 	router.HandleFunc("GET "+basePath, blogHandler.GetAllBlogs)
 	router.HandleFunc("GET "+basePath+"/{id}", blogHandler.GetOneBlog)
+	router.HandleFunc("GET "+basePath+"/{id}/comments", blogHandler.GetComments)
 
 	protected := []struct {
 		method  string
@@ -24,7 +25,7 @@ func RegisterBlogRoutes(router *http.ServeMux, blogHandler *handlers.BlogHandler
 			handler: blogHandler.CreateBlog,
 		},
 		{
-			method:  "PATCH",
+			method:  "PUT",
 			path:    basePath + "/{id}",
 			handler: blogHandler.UpdateBlog,
 		},
@@ -32,6 +33,16 @@ func RegisterBlogRoutes(router *http.ServeMux, blogHandler *handlers.BlogHandler
 			method:  "DELETE",
 			path:    basePath + "/{id}",
 			handler: blogHandler.DeleteOneBlog,
+		},
+		{
+			method:  "POST",
+			path:    basePath + "/{id}/comments",
+			handler: blogHandler.AddComment,
+		},
+		{
+			method:  "GET",
+			path:    basePath + "/my",
+			handler: blogHandler.GetBlogsByAuthor,
 		},
 	}
 
