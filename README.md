@@ -1,6 +1,6 @@
 # Go-MongoDB Course API
 
-A RESTful API for managing courses, users, and authentication built with Go and MongoDB. This project follows a clean architecture pattern and includes JWT-based authentication, role-based access control, and Swagger documentation.
+A RESTful API for managing courses, products, blogs, users, and authentication built with Go and MongoDB. This project follows a clean architecture pattern and includes JWT-based authentication, role-based access control, AWS S3 image uploads, and Swagger documentation.
 
 ## 🚀 Features
 
@@ -8,6 +8,8 @@ A RESTful API for managing courses, users, and authentication built with Go and 
 - **Authentication**: JWT-based authentication with Access and Refresh tokens.
 - **Role-Based Access Control**: Different permissions for `admin` and `user` roles.
 - **Course Management**: CRUD operations for courses (Create, Read, Update, Delete).
+- **Product Management**: CRUD operations for products.
+- **Blog Management**: CRUD operations for blogs with comment support and image uploads via AWS S3.
 - **Rate Limiting**: Protects the API from abuse by limiting request frequency.
 - **Swagger Documentation**: Interactive API documentation.
 - **Docker Support**: Easy deployment using Docker and Docker Compose.
@@ -18,6 +20,7 @@ A RESTful API for managing courses, users, and authentication built with Go and 
 - **Go**: Version 1.25.4
 - **MongoDB**: Primary database for data storage.
 - **JWT**: For secure authentication and session management.
+- **AWS S3**: For blog image storage and retrieval.
 - **Swagger**: For API documentation.
 - **Docker**: For containerization and deployment.
 - **Go Modules**: For dependency management.
@@ -45,6 +48,12 @@ JWT_SECRET=your-super-secret-key
 JWT_REFRESH_SECRET=another-super-secret-key
 ACCESS_TOKEN_EXPIRY_MINUTES=15
 REFRESH_TOKEN_EXPIRY_DAYS=7
+
+# AWS S3 Configuration (required for blog image uploads)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=your_aws_region
+AWS_S3_BUCKET=your_s3_bucket_name
 ```
 
 ## 🏃 Running the Application
@@ -97,6 +106,24 @@ Interactive Swagger documentation is available at:
 - `PATCH /api/v1/courses/{id}` - Update a course (Requires Auth)
 - `DELETE /api/v1/courses/{id}` - Delete a course (Requires Auth)
 - `DELETE /api/v1/courses/drop` - Drop all courses (Requires Admin)
+
+### Product Endpoints
+- `GET /api/v1/products` - List all products
+- `GET /api/v1/products/{id}` - Get product by ID
+- `POST /api/v1/products` - Create a new product
+- `PATCH /api/v1/products/{id}` - Update a product
+- `DELETE /api/v1/products/{id}` - Delete a product
+- `DELETE /api/v1/products` - Drop all products
+
+### Blog Endpoints
+- `GET /api/v1/blogs` - List all blogs
+- `GET /api/v1/blogs/{id}` - Get blog by ID
+- `GET /api/v1/blogs/{id}/comments` - Get comments for a blog
+- `GET /api/v1/blogs/my` - Get blogs by the authenticated author (Requires Auth)
+- `POST /api/v1/blogs` - Create a new blog with image upload (Requires Auth)
+- `PUT /api/v1/blogs/{id}` - Update a blog (Requires Auth)
+- `DELETE /api/v1/blogs/{id}` - Delete a blog (Requires Auth)
+- `POST /api/v1/blogs/{id}/comments` - Add a comment to a blog (Requires Auth)
 
 ### User Endpoints
 - `POST /api/v1/users` - Create a user
